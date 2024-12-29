@@ -3,6 +3,8 @@ import Task from "./Task";
 import AddForm from "./AddForm";
 import { saveToLocalStorage } from "./storage";
 
+// This is the template for processing the lists' information.
+// We passed the list array itself and three functions from App.js.
 const TodoList = ({ list, updateList, deleteList, updateLists }) => {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(list.title);
@@ -12,10 +14,17 @@ const TodoList = ({ list, updateList, deleteList, updateLists }) => {
     setEditing(false);
   };
 
+  // New tasks (i.e. their information) are created here and appended to the list's task array.
   const addTask = (text) => {
     const newTask = { id: Date.now(), text, completed: false };
+
+    // Append the new task to the list's existing task array via an auxiliary array:
     const updatedTasks = [...list.tasks, newTask];
+
+    // Overwrite the list's task array with the auxiliary array:
     const updatedList = { ...list, tasks: updatedTasks };
+
+    // Overwrite our list (identified via the id attribute) with the newly updated list:
     updateLists((prev) => {
       const updated = prev.map((l) => (l.id === list.id ? updatedList : l));
       saveToLocalStorage("todoLists", updated);
@@ -32,7 +41,9 @@ const TodoList = ({ list, updateList, deleteList, updateLists }) => {
           <button onClick={() => deleteList(list.id)}>Delete List</button>
         </div>
       ) : (
-        <h2 onClick={() => setEditing(true)}>{list.title}</h2>
+        <h2 title="edit" onClick={() => setEditing(true)}>
+          {list.title}
+        </h2>
       )}
 
       {list.tasks.map((task) => (

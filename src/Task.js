@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { saveToLocalStorage } from "./storage";
 
+// Template for processing the task info created in TodoList:
 const Task = ({ task, listId, updateLists }) => {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(task.text);
@@ -68,6 +69,7 @@ const Task = ({ task, listId, updateLists }) => {
         </div>
       ) : (
         <span
+          title="edit"
           onClick={() => setEditing(true)}
           style={{
             textDecoration: task.completed ? "line-through" : "none",
