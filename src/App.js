@@ -35,10 +35,45 @@ const App = () => {
     saveToLocalStorage("todoLists", updatedLists);
   };
 
+  const importJSON = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedList = JSON.parse(e.target.result);
+          // Validate imported data
+          if (
+            importedList &&
+            importedList.id &&
+            importedList.title &&
+            Array.isArray(importedList.tasks)
+          ) {
+            const updatedLists = [...lists, importedList];
+            setLists(updatedLists);
+            saveToLocalStorage("todoLists", updatedLists);
+            alert("List imported successfully!");
+          } else {
+            alert("Invalid JSON format.");
+          }
+        } catch (error) {
+          alert("Error parsing JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   return (
     <div>
       <h1>TO-DO LISTS</h1>
       <AddForm placeholder="Add new list" onSubmit={addList} />
+      <input
+        type="file"
+        accept="application/json"
+        onChange={importJSON}
+        style={{ marginTop: "16px", marginBottom: "16px" }}
+      />
       <div className="list-container">
         {lists.map((list) => (
           <div key={list.id} className="list-item">

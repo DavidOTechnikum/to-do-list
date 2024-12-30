@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Task from "./Task";
 import AddForm from "./AddForm";
-import { saveToLocalStorage } from "./storage";
+// import { saveToLocalStorage } from "./storage";
 
 // This is the template for processing the lists' information.
 // We passed the list array itself and three functions from App.js.
@@ -14,6 +14,31 @@ const TodoList = ({ list, updateList, deleteList, updateLists }) => {
     setEditing(false);
   };
 
+  const addTask = (text) => {
+    const newTask = { id: Date.now(), text, completed: false };
+    updateLists((prev) => {
+      const updatedLists = prev.map((l) =>
+        l.id === list.id ? { ...l, tasks: [...l.tasks, newTask] } : l
+      );
+      return updatedLists;
+    });
+  };
+
+  const exportToJSON = () => {
+    const dataStr = JSON.stringify(list, null, 2); // Convert to JSON string with formatting
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${list.title || "todo-list"}.json`;
+    link.click();
+
+    // Clean up URL object
+    URL.revokeObjectURL(url);
+  };
+
+  /*
   // New tasks (i.e. their information) are created here and appended to the list's task array.
   const addTask = (text) => {
     const newTask = { id: Date.now(), text, completed: false };
@@ -30,7 +55,7 @@ const TodoList = ({ list, updateList, deleteList, updateLists }) => {
       saveToLocalStorage("todoLists", updated);
       return updated;
     });
-  };
+*/
 
   return (
     <div>
@@ -57,6 +82,7 @@ const TodoList = ({ list, updateList, deleteList, updateLists }) => {
         </>
       ))}
       <AddForm placeholder="Add new task" onSubmit={addTask} />
+      <button onClick={exportToJSON}>Export JSON</button>
     </div>
   );
 };
