@@ -1,6 +1,54 @@
 import React, { useState } from "react";
 import Task from "./Task";
 import AddForm from "./AddForm";
+
+const TodoList = ({ list, updateList, uploadList }) => {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(list.title);
+
+  const handleEditTitle = () => {
+    const updatedList = { ...list, title };
+    updateList(updatedList); // Upload the updated list to Pinata
+    setEditing(false);
+  };
+
+  const addTask = (text) => {
+    const newTask = { id: Date.now(), text, completed: false };
+    const updatedList = { ...list, tasks: [...list.tasks, newTask] };
+    updateList(updatedList); // Upload the updated list to Pinata
+  };
+
+  const deleteTask = (taskId) => {
+    const updatedTasks = list.tasks.filter((task) => task.id !== taskId);
+    const updatedList = { ...list, tasks: updatedTasks };
+    updateList(updatedList); // Upload the updated list to Pinata
+  };
+
+  return (
+    <div>
+      {editing ? (
+        <div>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} />
+          <button onClick={handleEditTitle}>Accept</button>
+        </div>
+      ) : (
+        <h3 onClick={() => setEditing(true)}>{list.title}</h3>
+      )}
+      <AddForm placeholder="Add new task" onSubmit={addTask} />
+      {list.tasks.map((task) => (
+        <Task key={task.id} task={task} deleteTask={deleteTask} />
+      ))}
+      <button onClick={() => uploadList(list)}>Upload to IPFS</button>
+    </div>
+  );
+};
+
+export default TodoList;
+
+/*
+import React, { useState } from "react";
+import Task from "./Task";
+import AddForm from "./AddForm";
 // import { saveToLocalStorage } from "./storage";
 
 // This is the template for processing the lists' information.
@@ -55,7 +103,7 @@ const TodoList = ({ list, updateList, deleteList, updateLists }) => {
       saveToLocalStorage("todoLists", updated);
       return updated;
     });
-*/
+
 
   return (
     <div>
@@ -82,9 +130,10 @@ const TodoList = ({ list, updateList, deleteList, updateLists }) => {
         </>
       ))}
       <AddForm placeholder="Add new task" onSubmit={addTask} />
-      <button onClick={exportToJSON}>Export JSON</button>
+      <button onClick={() => uploadList(list)}>Upload to IPFS</button>
     </div>
   );
 };
 
 export default TodoList;
+*/

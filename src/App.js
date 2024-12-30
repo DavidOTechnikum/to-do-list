@@ -1,12 +1,99 @@
 import React, { useState, useEffect } from "react";
 import TodoList from "./TodoList";
 import AddForm from "./AddForm";
+import { uploadToPinata, fetchFromPinata } from "./pinata";
 import { saveToLocalStorage, loadFromLocalStorage } from "./storage";
 import "./App.css";
 
 const App = () => {
   const [lists, setLists] = useState([]);
+  const [hashes, setHashes] = useState(
+    () => JSON.parse(localStorage.getItem("todoHashes")) || []
+  );
 
+  useEffect(() => {
+    localStorage.setItem("todoHashes", JSON.stringify(hashes));
+  }, [hashes]);
+
+  const addList = (title) => {
+    const newList = { id: Date.now(), title, tasks: [] };
+    setLists((prev) => [...prev, newList]);
+  };
+
+  const uploadList = async (list) => {
+    try {
+      const hash = await uploadToPinata(list);
+      setHashes((prev) => [...prev, { id: list.id, hash }]);
+      alert(`List uploaded to IPFS! CID: ${hash}`);
+    } catch (error) {
+      alert("Failed to upload list to IPFS.");
+    }
+  };
+
+  const fetchList = async (hash) => {
+    try {
+      const list = await fetchFromPinata(hash);
+      setLists((prev) => [...prev, list]);
+    } catch (error) {
+      alert("Failed to fetch list from IPFS.");
+    }
+  };
+
+  const updateList = (updatedList) => {
+    const updatedLists = lists.map((list) =>
+      list.id === updatedList.id ? updatedList : list
+    );
+    setLists(updatedLists);
+    uploadList(updatedList); // Re-upload the updated list to Pinata
+  };
+
+  return (
+    <div>
+      <AddForm placeholder="Add new list" onSubmit={addList} />
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "16px",
+          marginTop: "16px",
+        }}
+      >
+        {lists.map((list) => (
+          <TodoList
+            key={list.id}
+            list={list}
+            updateList={updateList}
+            uploadList={uploadList}
+          />
+        ))}
+      </div>
+      <div>
+        <h3>Fetch Lists from IPFS</h3>
+        {hashes.map(({ id, hash }) => (
+          <div key={id}>
+            <span>{hash}</span>
+            <button onClick={() => fetchList(hash)}>Fetch List</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default App;
+
+/*
+const App = () => {
+  const [lists, setLists] = useState([]);
+  const [hashes, setHashes] = useState(
+    () => JSON.parse(localStorage.getItem("todoHashes")) || []
+  );
+
+  useEffect(() => {
+    localStorage.setItem("todoHashes", JSON.stringify(hashes));
+  }, [hashes]);
+
+  
   useEffect(() => {
     const savedLists = loadFromLocalStorage("todoLists");
     if (savedLists) {
@@ -20,7 +107,14 @@ const App = () => {
     setLists(updatedLists);
     saveToLocalStorage("todoLists", updatedLists);
   };
+  
 
+  const addList = (title) => {
+    const newList = { id: Date.now(), title, tasks: [] };
+    setLists((prev) => [...prev, newList]);
+  };
+
+  
   const updateList = (id, newTitle) => {
     const updatedLists = lists.map((list) =>
       list.id === id ? { ...list, title: newTitle } : list
@@ -28,13 +122,35 @@ const App = () => {
     setLists(updatedLists);
     saveToLocalStorage("todoLists", updatedLists);
   };
+  
 
+  const uploadList = async (list) => {
+    try {
+      const hash = await uploadToPinata(list);
+      setHashes((prev) => [...prev, { id: list.id, hash }]);
+      alert(`List uploaded to IPFS! CID: ${hash}`);
+    } catch (error) {
+      alert("Failed to upload list to IPFS.");
+    }
+  };
+
+  const fetchList = async (hash) => {
+    try {
+      const list = await fetchFromPinata(hash);
+      setLists((prev) => [...prev, list]);
+    } catch (error) {
+      alert("Failed to fetch list from IPFS.");
+    }
+  };
+
+  /*
   const deleteList = (id) => {
     const updatedLists = lists.filter((list) => list.id !== id);
     setLists(updatedLists);
     saveToLocalStorage("todoLists", updatedLists);
   };
-
+  */
+/*
   const importJSON = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -64,6 +180,36 @@ const App = () => {
     }
   };
 
+
+  return (
+    <div>
+      <AddForm placeholder="Add new list" onSubmit={addList} />
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "16px",
+          marginTop: "16px",
+        }}
+      >
+        {lists.map((list) => (
+          <TodoList key={list.id} list={list} uploadList={uploadList} />
+        ))}
+      </div>
+      <div>
+        <h3>Fetch Lists from IPFS</h3>
+        {hashes.map(({ id, hash }) => (
+          <div key={id}>
+            <span>{hash}</span>
+            <button onClick={() => fetchList(hash)}>Fetch List</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/*
   return (
     <div>
       <h1>TO-DO LISTS</h1>
@@ -90,6 +236,7 @@ const App = () => {
     </div>
   );
 };
+
 
 export default App;
 
