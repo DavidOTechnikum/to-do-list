@@ -2,10 +2,22 @@ import React, { useState } from "react";
 import { saveToLocalStorage } from "./storage";
 
 // Template for processing the task info created in TodoList:
-const Task = ({ task, listId, updateLists }) => {
+const Task = ({
+  task,
+  listId,
+  updateLists,
+  deleteTask,
+  editTask,
+  toggleCompleted
+}) => {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(task.text);
 
+  const handleEdit = () => {
+    editTask(task.id, text);
+    setEditing(false);
+  };
+  /*
   const handleEdit = () => {
     updateLists((prev) => {
       const updatedLists = prev.map((list) => {
@@ -22,7 +34,9 @@ const Task = ({ task, listId, updateLists }) => {
     });
     setEditing(false);
   };
+  */
 
+  /*
   const deleteTask = () => {
     updateLists((prev) => {
       const updatedLists = prev.map((list) => {
@@ -36,7 +50,9 @@ const Task = ({ task, listId, updateLists }) => {
       return updatedLists;
     });
   };
+*/
 
+  /*
   const toggleCompleted = () => {
     updateLists((prev) => {
       const updatedLists = prev.map((list) => {
@@ -52,20 +68,21 @@ const Task = ({ task, listId, updateLists }) => {
       return updatedLists;
     });
   };
+*/
 
   return (
     <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
       <input
         type="checkbox"
         checked={task.completed}
-        onChange={toggleCompleted}
+        onChange={() => toggleCompleted(task.id)}
         style={{ marginRight: "8px" }}
       />
       {editing ? (
         <div>
           <input value={text} onChange={(e) => setText(e.target.value)} />
           <button onClick={handleEdit}>Accept</button>
-          <button onClick={deleteTask}>Delete</button>
+          <button onClick={() => deleteTask(task.id)}>Delete</button>
         </div>
       ) : (
         <span
@@ -73,7 +90,7 @@ const Task = ({ task, listId, updateLists }) => {
           onClick={() => setEditing(true)}
           style={{
             textDecoration: task.completed ? "line-through" : "none",
-            cursor: "pointer",
+            cursor: "pointer"
           }}
         >
           {task.text}

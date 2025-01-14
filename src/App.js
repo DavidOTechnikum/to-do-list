@@ -44,7 +44,7 @@ const App = () => {
       list.id === updatedList.id ? updatedList : list
     );
     setLists(updatedLists);
-    uploadList(updatedList); // Re-upload the updated list to Pinata
+    // uploadList(updatedList); // Re-upload the updated list to Pinata
   };
 
   return (
@@ -55,7 +55,7 @@ const App = () => {
           display: "flex",
           flexWrap: "wrap",
           gap: "16px",
-          marginTop: "16px",
+          marginTop: "16px"
         }}
       >
         {lists.map((list) => (
