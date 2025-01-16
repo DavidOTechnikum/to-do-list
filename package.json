@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@helia/ipns": "^8.0.2",
+    "@libp2p/crypto": "^5.0.9",
     "@pinata/sdk": "^2.1.0",
     "cra-template": "1.2.0",
+    "helia": "^5.2.0",
+    "node-polyfill-webpack-plugin": "^4.1.0",
     "pinata-web3": "^0.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

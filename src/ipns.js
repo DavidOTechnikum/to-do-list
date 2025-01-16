@@ -10,21 +10,76 @@ import {
 const helia = await createHelia();
 const nameservice = ipns(helia);
 
-export const publishToIpns = async (cid) => {
-  /*
+export const newPublishToIpns = async (cid) => {
   const keyPair = await generateKeyPair("Ed25519");
-  const keyPairProtobuf = await privateKeyToProtobuf(keyPair);
-  const keyPairProtoBytes = Buffer.from(keyPairProtobuf).toString("base64");
-  localStorage.setItem("abc", keyPairProtoBytes);
+  const result = await nameservice.publish(keyPair, cid);
+  // use result for debugging:
+  alert(`published to ipns: ${result.value}; pubkey: ${keyPair.publicKey}`);
+  const serializedKeyPair = serializeKeys(keyPair);
+  return serializedKeyPair;
+};
 
-  alert(`pubkey: ${localStorage.getItem("abc")}`);
-  //const result = await nameservice.publish(keyPair, cid);
+export const republishToIpns = async (keyPairString, cid) => {
+  //const keyPair = deserializeKeys(keyPairString);
+  // function above works, but return doesnt?
+  // therefore: the function's code pasted starting here
+  const serializedKeyPair = new Uint8Array(
+    atob(keyPairString)
+      .split("")
+      .map((char) => char.charCodeAt(0))
+  );
+  const deserKeyPair = privateKeyFromProtobuf(serializedKeyPair);
+  // to here.
+  alert(`pubkey of deserkey for republishing: ${deserKeyPair.publicKey}`);
+  const result = await nameservice.publish(deserKeyPair, cid);
+  // use result for debugging:
+  alert(`republished: ${result.value}`);
+  resolveFromIpns(deserKeyPair.publicKey);
+};
 
-  const revertKeyBase64 = localStorage.getItem("abc");
-  const revertKeyBytes = Buffer.from(revertKeyBase64, "base64");
-  const revertKey = await privateKeyFromProtobuf(revertKeyBytes);
-  */
+const serializeKeys = (keyPair) => {
+  const serializedKeyPair = privateKeyToProtobuf(keyPair);
+  const serializedKeyPairString = btoa(
+    String.fromCharCode(...serializedKeyPair)
+  );
+  return serializedKeyPairString;
+};
 
+export const deserializeKeys = async (serializedKeyPairString) => {
+  const serializedKeyPair = new Uint8Array(
+    atob(serializedKeyPairString)
+      .split("")
+      .map((char) => char.charCodeAt(0))
+  );
+  const keyPair = privateKeyFromProtobuf(serializedKeyPair);
+  return keyPair;
+};
+
+function withTimeout(promise, ms) {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Timeout exceeded")), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
+
+export const resolveFromIpns = async (publicKey) => {
+  try {
+    //const result = await nameservice.resolve(publicKey);
+
+    const result = await withTimeout(nameservice.resolve(publicKey), 5000);
+    alert(`resolved: ${result.cid}`);
+    return result;
+  } catch (error) {
+    alert(`resolving unsuccessful, error: `, error.stack);
+    return {
+      id: "x",
+      cid: "bafkreifdimlownfs452g6lby26i2yzos3q7hhqx7fgyo4rawgtiqz24ch4"
+    };
+  }
+};
+
+/*
+export const publishToIpns = async (cid) => {
   const privateKey = await generateKeyPair("Ed25519");
 
   // Convert private key to Protobuf
@@ -59,11 +114,4 @@ export const publishToIpns = async (cid) => {
   the OG pubkey: ${privateKey.publicKey}`);
   return privateKey2.publicKey;
 };
-
-export const resolveFromIpns = async (publicKey) => {
-  const result = await nameservice.resolve(publicKey);
-  //const resultString = JSON.parse(result);
-  // const resultString = JSON.stringify(result);
-  alert(`resolved: ${result.cid}`);
-  return result;
-};
+*/

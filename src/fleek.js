@@ -1,3 +1,5 @@
+// deprecated
+
 import { FleekSdk, PersonalAccessTokenService } from "@fleek-platform/sdk/node";
 
 // Initialize Fleek client

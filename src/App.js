@@ -4,9 +4,24 @@ import AddForm from "./AddForm";
 import { uploadToPinata, fetchFromPinata } from "./pinata";
 import { saveToLocalStorage, loadFromLocalStorage } from "./storage";
 import "./App.css";
+import {
+  deserializeKeys,
+  newPublishToIpns,
+  republishToIpns,
+  resolveFromIpns
+} from "./ipns";
+import { ipns } from "@helia/ipns";
 
 const App = () => {
-  const [lists, setLists] = useState([]);
+  const [lists, setLists] = useState([]); // memory for rendering right now
+  const [deserKeys, setDeserKeys] = useState([]);
+  const [ipnsKeys, setIpnsKeys] = useState(
+    () => JSON.parse(localStorage.getItem("ipnsKeys")) || []
+  );
+  useEffect(() => {
+    localStorage.setItem("ipnsKeys", JSON.stringify(ipnsKeys));
+  }, [ipnsKeys]);
+
   const [hashes, setHashes] = useState(
     () => JSON.parse(localStorage.getItem("todoHashes")) || []
   );
@@ -15,21 +30,41 @@ const App = () => {
     localStorage.setItem("todoHashes", JSON.stringify(hashes));
   }, [hashes]);
 
-  const addList = (title) => {
+  const addList = async (title) => {
     const newList = { id: Date.now(), title, tasks: [] };
     setLists((prev) => [...prev, newList]);
+    const cid = await uploadToPinata(newList);
+    const serializedKeyPair = await newPublishToIpns(cid);
+    setIpnsKeys((prev) => [
+      ...prev,
+      { id: newList.id, key: serializedKeyPair }
+    ]);
   };
 
+  /*
   const uploadList = async (list) => {
     try {
-      const hash = await uploadToPinata(list);
-      setHashes((prev) => [...prev, { id: list.id, hash }]);
-      alert(`List uploaded to IPFS! CID: ${hash}`);
+      const cid = await uploadToPinata(list);
+      setHashes((prev) => [...prev, { id: list.id, cid }]);
+      alert(`List uploaded to IPFS! CID: ${cid}`);
     } catch (error) {
       alert("Failed to upload list to IPFS.");
     }
+    return cid;
+  };
+*/
+
+  const uploadList = async (list) => {
+    const cid = await uploadToPinata(list);
+    ipnsKeys.map((l) => {
+      if (l.id === list.id) {
+        republishToIpns(l.key, cid);
+      }
+    });
+    // republishToIpns(keyPairString, cid);
   };
 
+  /*
   const fetchList = async (hash) => {
     try {
       const list = await fetchFromPinata(hash);
@@ -37,6 +72,41 @@ const App = () => {
     } catch (error) {
       alert("Failed to fetch list from IPFS.");
     }
+  };
+  */
+
+  const fetchLists = async () => {
+    const resetList = [];
+    const resetDeserList = [];
+    setLists(resetList);
+    setDeserKeys(resetDeserList);
+
+    // try:
+    ipnsKeys.map(async (l) => {
+      const keyPair = await deserializeKeys(l.key);
+      setDeserKeys((prev) => [...prev, keyPair.publicKey]);
+    });
+
+    deserKeys.map(async (deserKey) => {
+      alert(`deserKey: ${deserKey}`);
+      // const result = await resolveFromIpns(deserKey);
+    });
+
+    deserKeys.map(async (l) => {
+      const result = await resolveFromIpns(l);
+      const list = await fetchFromPinata(result.cid);
+      setLists((prev) => [...prev, list]);
+    });
+
+    /*
+    ipnsKeys.map(async (l) => {
+      const keyPair = await deserializeKeys(l.key);
+      alert(`fetchlist keydeser: ${keyPair.publicKey}`);
+      const result = await resolveFromIpns(keyPair.publicKey);
+      const list = await fetchFromPinata(result.cid);
+      setLists((prev) => [...prev, list]);
+    });
+*/
   };
 
   const updateList = (updatedList) => {
@@ -68,13 +138,7 @@ const App = () => {
         ))}
       </div>
       <div>
-        <h3>Fetch Lists from IPFS</h3>
-        {hashes.map(({ id, hash }) => (
-          <div key={id}>
-            <span>{hash}</span>
-            <button onClick={() => fetchList(hash)}>Fetch List</button>
-          </div>
-        ))}
+        <button onClick={fetchLists}>Fetch all Lists</button>
       </div>
     </div>
   );
