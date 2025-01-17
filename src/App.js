@@ -13,15 +13,45 @@ import {
 import { ipns } from "@helia/ipns";
 
 const App = () => {
+  // for MetaMask:
+  const [loading, setLoading] = useState(true);
+  const [account, setAccount] = useState(null);
+  useEffect(() => {
+    const checkMetaMaskConnection = async () => {
+      if (window.ethereum) {
+        try {
+          // Request account access if necessasry
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts"
+          });
+
+          if (accounts.length > 0) {
+            setAccount(accounts[0]);
+          }
+        } catch (error) {
+          alert("MetaMask login error", error);
+        }
+      } else {
+        alert("MetaMask not installed");
+      }
+      setLoading(false);
+    };
+    checkMetaMaskConnection();
+  }, []);
+
+  // for Lists:
   const [lists, setLists] = useState([]); // memory for rendering right now
   const [deserKeys, setDeserKeys] = useState([]);
+
+  /*
   const [ipnsKeys, setIpnsKeys] = useState(
     () => JSON.parse(localStorage.getItem("ipnsKeys")) || []
   );
   useEffect(() => {
     localStorage.setItem("ipnsKeys", JSON.stringify(ipnsKeys));
   }, [ipnsKeys]);
-
+  */
+  /*
   const [hashes, setHashes] = useState(
     () => JSON.parse(localStorage.getItem("todoHashes")) || []
   );
@@ -29,6 +59,7 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem("todoHashes", JSON.stringify(hashes));
   }, [hashes]);
+*/
 
   const addList = async (title) => {
     const newList = { id: Date.now(), title, tasks: [] };
@@ -76,20 +107,12 @@ const App = () => {
   */
 
   const fetchLists = async () => {
-    const resetList = [];
-    const resetDeserList = [];
-    setLists(resetList);
-    setDeserKeys(resetDeserList);
+    deleteLists();
 
     // try:
     ipnsKeys.map(async (l) => {
       const keyPair = await deserializeKeys(l.key);
       setDeserKeys((prev) => [...prev, keyPair.publicKey]);
-    });
-
-    deserKeys.map(async (deserKey) => {
-      alert(`deserKey: ${deserKey}`);
-      // const result = await resolveFromIpns(deserKey);
     });
 
     deserKeys.map(async (l) => {
@@ -109,6 +132,13 @@ const App = () => {
 */
   };
 
+  const deleteLists = () => {
+    const resetList = [];
+    const resetDeserList = [];
+    setLists(resetList);
+    setDeserKeys(resetDeserList);
+  };
+
   const updateList = (updatedList) => {
     const updatedLists = lists.map((list) =>
       list.id === updatedList.id ? updatedList : list
@@ -116,6 +146,18 @@ const App = () => {
     setLists(updatedLists);
     // uploadList(updatedList); // Re-upload the updated list to Pinata
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!account) {
+    return (
+      <div>
+        <h2>MetaMask is not connected. Please log in/install.</h2>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -139,6 +181,7 @@ const App = () => {
       </div>
       <div>
         <button onClick={fetchLists}>Fetch all Lists</button>
+        <button onClick={deleteLists}>Clear Screen (debug) </button>
       </div>
     </div>
   );
