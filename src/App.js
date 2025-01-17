@@ -10,12 +10,17 @@ import {
   republishToIpns,
   resolveFromIpns
 } from "./ipns";
-import { ipns } from "@helia/ipns";
+import {
+  loadBlockchainData,
+  createListBlockchain,
+  fetchUserListsBlockchain,
+  deleteListBlockchain
+} from "./UserListManagementService";
 
 const App = () => {
   // for MetaMask:
-  const [loading, setLoading] = useState(true);
-  const [account, setAccount] = useState(null);
+  const [loadingMetaMask, setLoadingMetaMask] = useState(true);
+  const [accountMetaMask, setAccountMetaMask] = useState(null);
   useEffect(() => {
     const checkMetaMaskConnection = async () => {
       if (window.ethereum) {
@@ -26,7 +31,7 @@ const App = () => {
           });
 
           if (accounts.length > 0) {
-            setAccount(accounts[0]);
+            setAccountMetaMask(accounts[0]);
           }
         } catch (error) {
           alert("MetaMask login error", error);
@@ -34,14 +39,25 @@ const App = () => {
       } else {
         alert("MetaMask not installed");
       }
-      setLoading(false);
+      setLoadingMetaMask(false);
     };
     checkMetaMaskConnection();
+  }, []);
+
+  // for Smart Contract:
+  const [isBlockchainLoaded, setBlockchainLoaded] = useState(false);
+  useEffect(() => {
+    const initializeBlockchain = async () => {
+      const success = await loadBlockchainData();
+      setBlockchainLoaded(success);
+    };
+    initializeBlockchain();
   }, []);
 
   // for Lists:
   const [lists, setLists] = useState([]); // memory for rendering right now
   const [deserKeys, setDeserKeys] = useState([]);
+  const [ipnsKeys, setIpnsKeys] = useState([]);
 
   /*
   const [ipnsKeys, setIpnsKeys] = useState(
@@ -66,10 +82,13 @@ const App = () => {
     setLists((prev) => [...prev, newList]);
     const cid = await uploadToPinata(newList);
     const serializedKeyPair = await newPublishToIpns(cid);
+
+    // storing to ipnsKeys necessary for uploadList()
     setIpnsKeys((prev) => [
       ...prev,
       { id: newList.id, key: serializedKeyPair }
     ]);
+    await createListBlockchain(newList.id, serializedKeyPair);
   };
 
   /*
@@ -95,21 +114,11 @@ const App = () => {
     // republishToIpns(keyPairString, cid);
   };
 
-  /*
-  const fetchList = async (hash) => {
-    try {
-      const list = await fetchFromPinata(hash);
-      setLists((prev) => [...prev, list]);
-    } catch (error) {
-      alert("Failed to fetch list from IPFS.");
-    }
-  };
-  */
-
   const fetchLists = async () => {
-    deleteLists();
+    clearLists();
 
-    // try:
+    setIpnsKeys(fetchUserListsBlockchain);
+
     ipnsKeys.map(async (l) => {
       const keyPair = await deserializeKeys(l.key);
       setDeserKeys((prev) => [...prev, keyPair.publicKey]);
@@ -132,7 +141,11 @@ const App = () => {
 */
   };
 
-  const deleteLists = () => {
+  const deleteList = () => {
+    // UserListManagementService: delete function
+  };
+
+  const clearLists = () => {
     const resetList = [];
     const resetDeserList = [];
     setLists(resetList);
@@ -147,16 +160,20 @@ const App = () => {
     // uploadList(updatedList); // Re-upload the updated list to Pinata
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
+  if (loadingMetaMask) {
+    return <div>Loading MetaMask...</div>;
   }
 
-  if (!account) {
+  if (!accountMetaMask) {
     return (
       <div>
         <h2>MetaMask is not connected. Please log in/install.</h2>
       </div>
     );
+  }
+
+  if (!isBlockchainLoaded) {
+    return <div>Loading Blockchain...</div>;
   }
 
   return (
@@ -181,7 +198,7 @@ const App = () => {
       </div>
       <div>
         <button onClick={fetchLists}>Fetch all Lists</button>
-        <button onClick={deleteLists}>Clear Screen (debug) </button>
+        <button onClick={clearLists}>Clear Screen (debug) </button>
       </div>
     </div>
   );
