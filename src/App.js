@@ -16,6 +16,7 @@ import {
   fetchUserListsBlockchain,
   deleteListBlockchain
 } from "./UserListManagementService";
+import { flushSync } from "react-dom";
 
 const App = () => {
   // for MetaMask:
@@ -48,7 +49,7 @@ const App = () => {
   const [isBlockchainLoaded, setBlockchainLoaded] = useState(false);
   useEffect(() => {
     const initializeBlockchain = async () => {
-      const success = await loadBlockchainData();
+      const success = await loadBlockchainData(accountMetaMask);
       setBlockchainLoaded(success);
     };
     initializeBlockchain();
@@ -88,7 +89,7 @@ const App = () => {
       ...prev,
       { id: newList.id, key: serializedKeyPair }
     ]);
-    await createListBlockchain(newList.id, serializedKeyPair);
+    await createListBlockchain(newList.id, serializedKeyPair, accountMetaMask);
   };
 
   /*
@@ -111,13 +112,16 @@ const App = () => {
         republishToIpns(l.key, cid);
       }
     });
-    // republishToIpns(keyPairString, cid);
   };
 
   const fetchLists = async () => {
     clearLists();
 
-    setIpnsKeys(fetchUserListsBlockchain);
+    const fetchedLists = fetchUserListsBlockchain(accountMetaMask);
+
+    (await fetchedLists).map(async (fl) => {
+      setIpnsKeys((prev) => [...prev, fl]);
+    });
 
     ipnsKeys.map(async (l) => {
       const keyPair = await deserializeKeys(l.key);
@@ -125,6 +129,7 @@ const App = () => {
     });
 
     deserKeys.map(async (l) => {
+      alert(`lol`);
       const result = await resolveFromIpns(l);
       const list = await fetchFromPinata(result.cid);
       setLists((prev) => [...prev, list]);
@@ -148,8 +153,10 @@ const App = () => {
   const clearLists = () => {
     const resetList = [];
     const resetDeserList = [];
+    const resetIpnsKeys = [];
     setLists(resetList);
     setDeserKeys(resetDeserList);
+    setIpnsKeys(resetIpnsKeys);
   };
 
   const updateList = (updatedList) => {

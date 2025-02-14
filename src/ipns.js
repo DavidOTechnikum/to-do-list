@@ -16,6 +16,7 @@ export const newPublishToIpns = async (cid) => {
   // use result for debugging:
   alert(`published to ipns: ${result.value}; pubkey: ${keyPair.publicKey}`);
   const serializedKeyPair = serializeKeys(keyPair);
+  alert(`deserialized ipns value: ${serializedKeyPair}`);
   return serializedKeyPair;
 };
 
@@ -63,6 +64,7 @@ function withTimeout(promise, ms) {
 }
 
 export const resolveFromIpns = async (publicKey) => {
+  alert(`hello, baby`);
   try {
     //const result = await nameservice.resolve(publicKey);
 

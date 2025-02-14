@@ -1,15 +1,16 @@
 import Web3 from "web3";
 import UserListManagement from "./contracts/UserListManagement.json";
 
-const web3 = new Web3(Web3.givenProvider || "http://127.0.0.1:7545");
+//const web3 = new Web3(Web3.givenProvider || "http://127.0.0.1:7545");
+const web3 = new Web3(window.ethereum);
 
 let userListManagementContract;
 let userAccount;
 
 export async function loadBlockchainData(accountMetaMask) {
-  const accounts = await web3.eth.requestAccounts();
-  userAccount = accounts(0);
-  //userAccount = accountMetaMask;
+  // const accounts = await web3.eth.requestAccounts();
+  //userAccount = accounts[0];
+  userAccount = accountMetaMask;
 
   const networkId = await web3.eth.net.getId();
   const networkData = UserListManagement.networks[networkId];
@@ -32,16 +33,21 @@ export async function createListBlockchain(id, ipnsName, accountMetaMask) {
     .send({ from: accountMetaMask });
 }
 
+// format for list array: { id: newList.id, key: serializedKeyPair }
+
 export async function fetchUserListsBlockchain(accountMetaMask) {
   const listIds = await userListManagementContract.methods
-    .fetchUserLists({ from: accountMetaMask })
-    .call();
+    .fetchUserLists()
+    .call({ from: accountMetaMask });
   const lists = [];
+
   for (let id of listIds) {
     const list = await userListManagementContract.methods.lists(id).call();
-    lists.push(list);
+    //alert(`fetched list id: ${list.id} and ipnsName: ${list.ipnsName}`);
+    const newListObject = { id: list.id, key: list.ipnsName };
+    lists.push(newListObject);
   }
-  return lists;
+  return lists; // Format bzw. Objekt überprüfen!
 }
 
 export async function deleteListBlockchain(id, accountMetaMask) {
