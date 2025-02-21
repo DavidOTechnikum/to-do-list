@@ -9,16 +9,25 @@ contract UserListManagement {
     address creator;
   }
 
+  struct User {
+    string username; 
+    string pubkey;
+  }
+
+// how to secure data in mappings? 
   // user address to list IDs
-  mapping(address => uint[]) public userLists;
+  mapping(address => uint[]) private userLists;
   // list ID to list data
   mapping(uint => List) public lists;
+  // username and RSA pubkey feature 
+  mapping(address => User) public users;
 
   event ListCreated(uint id, string ipnsName, address creator);
   event ListDeleted(uint id);
 
 
   function createList(uint _id, string memory _ipnsName) public {
+    // Check in mapping: Creator of said list must be 0 i.e. list does not exist yet. 
     require(lists[_id].creator == address(0), "List ID already exists.");
 
     lists[_id] = List(_id, _ipnsName, msg.sender);
@@ -35,7 +44,8 @@ contract UserListManagement {
     delete lists[_id];
 
     uint[] storage userList = userLists[msg.sender];
-    for (uint i = 0; i < userList.length; i++) {
+    uint length = userList.length;
+    for (uint i = 0; i < length; i++) {
       if (userList[i] == _id) {
         userList[i] = userList[userList.length -1];
         userList.pop();
@@ -43,6 +53,36 @@ contract UserListManagement {
       }
     }
     emit ListDeleted(_id);
+  }
+
+  function setUsername (string memory _username) public {
+
+    // require: users-mapping durchgehen und _username suchen, falls vorhanden: Abbruch
+    // eigenen User suchen mit sender address
+    // falls nicht da: neuer User 
+    // falls da: username austauschen 
+    // event? 
+
+  }
+
+  function getUserByUsername ( string memory _username) public view {
+    
+    // mapping durchgehen: user.username == _username? 
+    // falls ja: return
+    // falls nicht da: negativ
+
+  }
+
+
+
+
+  function storeRSAPubKey(string memory _pubkey) public {
+
+    // require: users-mapping durchgehen und eigene Adresse suchen 
+    // falls da: pubkey durch _pubkey ersetzen 
+    // event: Erfolg 
+    
+
   }
   
 }

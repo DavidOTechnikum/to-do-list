@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Task from "./Task";
 import AddForm from "./AddForm";
 
-const TodoList = ({ list, updateList, uploadList }) => {
+const TodoList = ({ list, updateList, uploadList, deleteList }) => {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(list.title);
 
@@ -64,6 +64,7 @@ const TodoList = ({ list, updateList, uploadList }) => {
         />
       ))}
       <button onClick={() => uploadList(list)}>Upload to IPFS</button>
+      <button onClick={() => deleteList(list)}>Delete list</button>
     </div>
   );
 };

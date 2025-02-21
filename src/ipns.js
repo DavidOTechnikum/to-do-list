@@ -64,7 +64,7 @@ function withTimeout(promise, ms) {
 }
 
 export const resolveFromIpns = async (publicKey) => {
-  alert(`hello, baby`);
+  alert(`resolving started`);
   try {
     //const result = await nameservice.resolve(publicKey);
 
