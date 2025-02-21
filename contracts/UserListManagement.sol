@@ -9,21 +9,18 @@ contract UserListManagement {
     address creator;
   }
 
-  struct User {
-    string username; 
-    string pubkey;
-  }
 
 // how to secure data in mappings? 
   // user address to list IDs
-  mapping(address => uint[]) private userLists;
+  mapping(address => uint[]) public userLists;
   // list ID to list data
   mapping(uint => List) public lists;
   // username and RSA pubkey feature 
-  mapping(address => User) public users;
+  mapping(address => string) public userRSAPubKeys;
 
   event ListCreated(uint id, string ipnsName, address creator);
   event ListDeleted(uint id);
+  event RSAPubKeyStored(string RSAPubKey);
 
 
   function createList(uint _id, string memory _ipnsName) public {
@@ -55,34 +52,12 @@ contract UserListManagement {
     emit ListDeleted(_id);
   }
 
-  function setUsername (string memory _username) public {
-
-    // require: users-mapping durchgehen und _username suchen, falls vorhanden: Abbruch
-    // eigenen User suchen mit sender address
-    // falls nicht da: neuer User 
-    // falls da: username austauschen 
-    // event? 
-
-  }
-
-  function getUserByUsername ( string memory _username) public view {
-    
-    // mapping durchgehen: user.username == _username? 
-    // falls ja: return
-    // falls nicht da: negativ
-
-  }
 
 
-
-
-  function storeRSAPubKey(string memory _pubkey) public {
-
-    // require: users-mapping durchgehen und eigene Adresse suchen 
-    // falls da: pubkey durch _pubkey ersetzen 
-    // event: Erfolg 
-    
-
+  function storeRSAPubKey(string memory _rSAPubKey) public {
+        require(bytes(_rSAPubKey).length > 0, "Public key cannot be empty");
+        userRSAPubKeys[msg.sender] = _rSAPubKey;  // Store key
+        emit RSAPubKeyStored(_rSAPubKey);
   }
   
 }

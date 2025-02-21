@@ -17,6 +17,7 @@ export const uploadToPinata = async (list) => {
 };
 
 export const fetchFromPinata = async (cid) => {
+  alert(`fetching from pinata started`);
   try {
     const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
     const jsonData = await response.json();
@@ -29,7 +30,7 @@ export const fetchFromPinata = async (cid) => {
 
 export const unpinFromPinata = async (cid) => {
   try {
-    const response = await pinata.unpin(String(cid));
+    const response = await pinata.unpin([`${cid}`]);
     alert(`unpinned cid: ${response.cid}`);
   } catch (error) {
     console.error("Error unpinninig from Pinata:", error);

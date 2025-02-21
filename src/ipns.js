@@ -10,20 +10,23 @@ import {
 const helia = await createHelia();
 const nameservice = ipns(helia);
 
-export const newPublishToIpns = async (cid) => {
-  const keyPair = await generateKeyPair("Ed25519");
+export const newPublishToIpns = async (cid, keyPair) => {
+  alert(`IPNS publishing started...`);
+  //const keyPair = await generateKeyPair("Ed25519");
   const result = await nameservice.publish(keyPair, cid);
   // use result for debugging:
   alert(`published to ipns: ${result.value}; pubkey: ${keyPair.publicKey}`);
-  const serializedKeyPair = serializeKeys(keyPair);
-  alert(`deserialized ipns value: ${serializedKeyPair}`);
-  return serializedKeyPair;
+  //const serializedKeyPair = serializeKeys(keyPair);
+  //alert(`deserialized ipns value: ${serializedKeyPair}`);
+  //return serializedKeyPair;
 };
 
 export const republishToIpns = async (keyPairString, cid) => {
   //const keyPair = deserializeKeys(keyPairString);
   // function above works, but return doesnt?
   // therefore: the function's code pasted starting here
+
+  alert(`republishing started`);
   const serializedKeyPair = new Uint8Array(
     atob(keyPairString)
       .split("")
@@ -31,14 +34,13 @@ export const republishToIpns = async (keyPairString, cid) => {
   );
   const deserKeyPair = privateKeyFromProtobuf(serializedKeyPair);
   // to here.
-  alert(`pubkey of deserkey for republishing: ${deserKeyPair.publicKey}`);
   const result = await nameservice.publish(deserKeyPair, cid);
   // use result for debugging:
   alert(`republished: ${result.value}`);
   resolveFromIpns(deserKeyPair.publicKey);
 };
 
-const serializeKeys = (keyPair) => {
+export const serializeKeys = (keyPair) => {
   const serializedKeyPair = privateKeyToProtobuf(keyPair);
   const serializedKeyPairString = btoa(
     String.fromCharCode(...serializedKeyPair)

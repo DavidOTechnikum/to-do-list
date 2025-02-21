@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import TodoList from "./TodoList";
 import AddForm from "./AddForm";
 import { uploadToPinata, fetchFromPinata, unpinFromPinata } from "./pinata";
+import { generateKeyPair } from "@libp2p/crypto/keys";
 import { saveToLocalStorage, loadFromLocalStorage } from "./storage";
 import "./App.css";
-import KeyManager from "./keyManager";
+import RSAKeyManager from "./RSAKeyManager";
 import {
   deserializeKeys,
   newPublishToIpns,
   republishToIpns,
-  resolveFromIpns
+  resolveFromIpns,
+  serializeKeys
 } from "./ipns";
 import {
   loadBlockchainData,
@@ -81,17 +83,29 @@ const App = () => {
 */
 
   const addList = async (title) => {
+    const keyPair = await generateKeyPair("Ed25519");
     const newList = { id: Date.now(), title, tasks: [] };
+    const serializedKeyPair = serializeKeys(keyPair);
+
+    try {
+      await createListBlockchain(
+        newList.id,
+        serializedKeyPair,
+        accountMetaMask
+      );
+    } catch (error) {
+      return;
+    }
+
     setLists((prev) => [...prev, newList]);
     const cid = await uploadToPinata(newList);
-    const serializedKeyPair = await newPublishToIpns(cid);
+    await newPublishToIpns(cid, keyPair);
 
     // storing to ipnsKeys necessary for uploadList()
     setIpnsKeys((prev) => [
       ...prev,
       { id: newList.id, key: serializedKeyPair }
     ]);
-    await createListBlockchain(newList.id, serializedKeyPair, accountMetaMask);
   };
 
   /*
@@ -109,8 +123,9 @@ const App = () => {
 
   const uploadList = async (list) => {
     const cid = await uploadToPinata(list);
+    alert(`uploading: pinata done`);
     ipnsKeys.map((l) => {
-      if (l.id === list.id) {
+      if (l.id == list.id) {
         republishToIpns(l.key, cid);
       }
     });
@@ -152,14 +167,6 @@ const App = () => {
     // unpinnen im Pinata
     // löschen aus Liste-Mapping und ipnsKeys-Mapping
 
-    ipnsKeys.map(async (l) => {
-      if (l.id == deletedList.id) {
-        const keyPair = await deserializeKeys(l.key);
-        const cid = resolveFromIpns(keyPair.publicKey);
-        await unpinFromPinata(cid);
-      }
-    });
-
     try {
       await deleteListBlockchain(deletedList.id, accountMetaMask);
       alert(`deletion from blockchain complete`);
@@ -167,6 +174,14 @@ const App = () => {
       alert(`deletion from blockchain unsuccessful`);
       return;
     }
+
+    ipnsKeys.map(async (l) => {
+      if (l.id == deletedList.id) {
+        const keyPair = await deserializeKeys(l.key);
+        const cid = resolveFromIpns(keyPair.publicKey);
+        await unpinFromPinata(cid);
+      }
+    });
 
     setLists((l) => l.filter((item) => item.id !== deletedList.id));
     setIpnsKeys((k) => k.filter((item) => item.id !== deletedList.id));
@@ -226,12 +241,14 @@ const App = () => {
           />
         ))}
       </div>
+      <br></br>
       <div>
         <button onClick={fetchLists}>Fetch all Lists</button>
         <button onClick={clearLists}>Clear Screen (debug) </button>
       </div>
+      <br></br>
       <div>
-        <KeyManager accountMetaMask={accountMetaMask} />
+        <RSAKeyManager accountMetaMask={accountMetaMask} />
       </div>
     </div>
   );

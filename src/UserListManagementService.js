@@ -51,7 +51,34 @@ export async function fetchUserListsBlockchain(accountMetaMask) {
 }
 
 export async function deleteListBlockchain(id, accountMetaMask) {
-  await userListManagementContract.methods
-    .deleteList(id)
-    .send({ from: accountMetaMask });
+  try {
+    await userListManagementContract.methods
+      .deleteList(id)
+      .send({ from: accountMetaMask });
+  } catch (error) {
+    return error;
+  }
+}
+
+export async function storeRSAPubKeyBlockchain(rSAPubKey, accountMetaMask) {
+  try {
+    alert(`storing from account ${accountMetaMask}`);
+    alert(`pubkey: ${rSAPubKey}`);
+    await userListManagementContract.methods
+      .storeRSAPubKey(rSAPubKey)
+      .send({ from: accountMetaMask });
+  } catch (error) {
+    return error;
+  }
+}
+
+export async function getRSAPubKeyBlockchain(peerAccount) {
+  try {
+    const peerRSAPubKey = await userListManagementContract.methods
+      .userRSAPubKeys(peerAccount)
+      .call();
+    return peerRSAPubKey;
+  } catch (error) {
+    return error;
+  }
 }
