@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
 
-contract UserListManagement {
 
- // struct List {
- //   uint id;
- //   string ipnsName;
- //   address creator;
- // }
+
+contract UserListManagement {
 
   struct ListKey {
     uint id;
@@ -31,12 +27,20 @@ contract UserListManagement {
   event ListShared(uint id, address peer);
   event ListUnshared(uint id, address peer);
 
-  // Getter für das komplette Array                                               -------------!
+
+  // Getter für das komplette Array 
+
+  function getListUsers(uint _id) public view returns (address[] memory) {
+    return listUsers[_id];
+  }
+
+  function getUserLists(address peer) public view returns (ListKey[] memory) {
+    return userLists[peer];
+  }
 
 
   function createList(uint _id, string memory _ipnsName, string memory _keyAES) public {
-    // Check in mapping: Creator of said list must be 0 i.e. list does not exist yet.  ------> anders machen 
-   // require(listUsers[_id][0] == address(0), "List ID already exists.");
+   require(bytes(iPNSname[_id]).length == 0, "List ID already exists.");
 
     iPNSname[_id] = (_ipnsName);
     userLists[msg.sender].push(ListKey(_id, _keyAES));
@@ -45,9 +49,6 @@ contract UserListManagement {
     emit ListCreated(_id, _ipnsName, msg.sender);
   }
 
-//  function fetchUserLists() public view returns (uint[] memory) {
-//    return userLists[msg.sender];
-//  }
 
 function userCheck(address myAddress, uint _id) private view returns (bool) {
   for (uint i = 0; i < listUsers[_id].length; i++) {
@@ -62,7 +63,6 @@ function userCheck(address myAddress, uint _id) private view returns (bool) {
   function shareList(address peer, uint _id, string memory _keyAES) public {
     require(userCheck(msg.sender, _id), "No rights to the list");
     require(peer != msg.sender, "Sharing with oneself not possible");
-    //    schauen, ob "peer" tatsächlich eine Adresse ist -> openzeppelin     -----!
     
     userLists[peer].push(ListKey(_id, _keyAES));
     listUsers[_id].push(peer);
@@ -72,7 +72,7 @@ function userCheck(address myAddress, uint _id) private view returns (bool) {
 
   function unshareList(address peer, uint _id) public {
     require(userCheck(msg.sender, _id), "No rights to the list");
-    // require: nicht letzer User                                           -----!
+    require(listUsers[_id].length > 1, "Cannot unshare with last user");
 
     for (uint i = 0; i < listUsers[_id].length; i++) {
       if (listUsers[_id][i] == peer) {
