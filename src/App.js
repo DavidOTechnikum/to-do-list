@@ -5,7 +5,7 @@ import { uploadToPinata, fetchFromPinata, unpinFromPinata } from "./pinata";
 import { generateKeyPair } from "@libp2p/crypto/keys";
 import { saveToLocalStorage, loadFromLocalStorage } from "./storage";
 import "./App.css";
-import RSAKeyManager from "./RSAKeyManager";
+import RSAEncryption from "./RSAKeyManager";
 import {
   deserializeKeys,
   newPublishToIpns,
@@ -248,7 +248,7 @@ const App = () => {
       </div>
       <br></br>
       <div>
-        <RSAKeyManager accountMetaMask={accountMetaMask} />
+        <RSAEncryption accountMetaMask={accountMetaMask} />
       </div>
     </div>
   );

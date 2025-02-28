@@ -4,7 +4,7 @@ import {
   getRSAPubKeyBlockchain
 } from "./UserListManagementService";
 
-const RSAKeyManager = ({ accountMetaMask }) => {
+const RSAEncryption = ({ accountMetaMask }) => {
   const [rSAKeyPair, setRSAKeyPair] = useState(null);
 
   const generateRSAKeyPair = async () => {
@@ -100,4 +100,4 @@ const RSAKeyManager = ({ accountMetaMask }) => {
   );
 };
 
-export default RSAKeyManager;
+export default RSAEncryption;
