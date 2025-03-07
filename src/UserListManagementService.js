@@ -27,15 +27,20 @@ export async function loadBlockchainData(accountMetaMask) {
   }
 }
 
+// komplette Methode: Parameter anpassen (mein AES-Key)
 export async function createListBlockchain(id, ipnsName, accountMetaMask) {
   await userListManagementContract.methods
-    .createList(id, ipnsName)
+    .createList(id, ipnsName) // hier auch
     .send({ from: accountMetaMask });
 }
 
 // format for list array: { id: newList.id, key: serializedKeyPair }
 
 export async function fetchUserListsBlockchain(accountMetaMask) {
+  //geht nicht mehr so..
+  // getUserLists: returnt ListKey-Array (ui, keyAES)
+  // Loop: ...methods.iPNSname(id).call(); -> IPNS-Namen holen
+  // pushen: ListObject = { id, ipnsName, AESKey} und return
   const listIds = await userListManagementContract.methods
     .fetchUserLists()
     .call({ from: accountMetaMask });
@@ -50,6 +55,11 @@ export async function fetchUserListsBlockchain(accountMetaMask) {
   return lists; // Format bzw. Objekt überprüfen!
 }
 
+export async function fetchListPeersBlockchain(accountMetaMask) {
+  // Parameter: ListenID
+  // Return: Adressen-Array (Strings)
+}
+
 export async function deleteListBlockchain(id, accountMetaMask) {
   try {
     await userListManagementContract.methods
@@ -58,6 +68,18 @@ export async function deleteListBlockchain(id, accountMetaMask) {
   } catch (error) {
     return error;
   }
+}
+
+export async function shareListBlockchain() {
+  // Parameter: Peer-Adresse, ListenID, verschlüsselten AES-Key
+  // shareList() aufrufen: peer, id, keyAES
+  // retval: bool
+}
+
+export async function unshareListBlockchain() {
+  // Parameter: Peer-Adresse, ListenID
+  // unshareList() aufrufen
+  // retval: bool
 }
 
 export async function storeRSAPubKeyBlockchain(rSAPubKey, accountMetaMask) {

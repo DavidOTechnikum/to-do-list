@@ -6,9 +6,12 @@ const pinata = new PinataSDK({
   pinataGateway: "copper-quiet-swordtail-130.mypinata.cloud"
 });
 
+// Verschlüsselung! -> siehe GPT-Anleitung
 export const uploadToPinata = async (list) => {
   try {
-    const result = await pinata.upload.json(list);
+    // encryption AES
+    // Blob machen und nächste Zeile anpassen:
+    const result = await pinata.upload.json(list); // upload Blob
     return result.IpfsHash; // The IPFS hash (CID)
   } catch (error) {
     console.error("Error uploading to Pinata:", error);
@@ -17,9 +20,11 @@ export const uploadToPinata = async (list) => {
 };
 
 export const fetchFromPinata = async (cid) => {
+  // Parameter: AES-Key
   alert(`fetching from pinata started`);
   try {
     const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
+    // decryption AES -> Blob decryption, dann JSON parsen, nächste Zeile anpassen:
     const jsonData = await response.json();
     return jsonData;
   } catch (error) {

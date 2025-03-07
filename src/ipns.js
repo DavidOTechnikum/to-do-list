@@ -12,20 +12,12 @@ const nameservice = ipns(helia);
 
 export const newPublishToIpns = async (cid, keyPair) => {
   alert(`IPNS publishing started...`);
-  //const keyPair = await generateKeyPair("Ed25519");
   const result = await nameservice.publish(keyPair, cid);
   // use result for debugging:
   alert(`published to ipns: ${result.value}; pubkey: ${keyPair.publicKey}`);
-  //const serializedKeyPair = serializeKeys(keyPair);
-  //alert(`deserialized ipns value: ${serializedKeyPair}`);
-  //return serializedKeyPair;
 };
 
 export const republishToIpns = async (keyPairString, cid) => {
-  //const keyPair = deserializeKeys(keyPairString);
-  // function above works, but return doesnt?
-  // therefore: the function's code pasted starting here
-
   alert(`republishing started`);
   const serializedKeyPair = new Uint8Array(
     atob(keyPairString)
@@ -81,41 +73,3 @@ export const resolveFromIpns = async (publicKey) => {
     };
   }
 };
-
-/*
-export const publishToIpns = async (cid) => {
-  const privateKey = await generateKeyPair("Ed25519");
-
-  // Convert private key to Protobuf
-  const serializedPrivateKey = privateKeyToProtobuf(privateKey);
-
-  // Convert Uint8Array to a Base64 string
-  const serializedString = btoa(String.fromCharCode(...serializedPrivateKey));
-
-  // Store in localStorage or other storage
-  localStorage.setItem("ed25519PrivateKey", serializedString);
-
-  const serializedString2 = localStorage.getItem("ed25519PrivateKey");
-  alert(`serialized Protobuf from Storage: ${serializedString2}`);
-
-  if (!serializedString2) {
-    throw new Error("No private key found in storage!");
-  }
-
-  // Convert Base64 string back to Uint8Array
-  const serializedPrivateKey2 = new Uint8Array(
-    atob(serializedString2)
-      .split("")
-      .map((char) => char.charCodeAt(0))
-  );
-
-  // Convert Protobuf to private key object
-  const privateKey2 = await privateKeyFromProtobuf(serializedPrivateKey2);
-
-  const result = await nameservice.publish(privateKey2, cid);
-
-  alert(`result: ${result.signatureV2} and the pubkey: ${privateKey2.publicKey} and
-  the OG pubkey: ${privateKey.publicKey}`);
-  return privateKey2.publicKey;
-};
-*/

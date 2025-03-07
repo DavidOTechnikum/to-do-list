@@ -4,6 +4,10 @@ import {
   getRSAPubKeyBlockchain
 } from "./UserListManagementService";
 
+export const encryptRSA = async () => {};
+
+export const decryptRSA = async () => {};
+
 const RSAEncryption = ({ accountMetaMask }) => {
   const [rSAKeyPair, setRSAKeyPair] = useState(null);
 

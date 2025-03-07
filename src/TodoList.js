@@ -42,6 +42,15 @@ const TodoList = ({ list, updateList, uploadList, deleteList }) => {
     updateList(updatedList);
   };
 
+  // folgende Methoden kommen nur mit und werden im GUI aufgerufen, also die folgenden Zeilen kommen wieder weg:
+  const handlePeerList = () => {};
+
+  const shareList = () => {};
+
+  const unshareList = () => {};
+
+  // Aufklappliste mit useState-Bools für Edit-Mode mit mitgegebenen Peer-Adressen
+  // Share- und Unshare-Buttons sowie Share-Input-Feld (für Peer-Adresse) einbauen
   return (
     <div>
       {editing ? (
