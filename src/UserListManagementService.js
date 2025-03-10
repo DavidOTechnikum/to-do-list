@@ -43,26 +43,35 @@ export async function createListBlockchain(
 
 export async function fetchUserListsBlockchain(accountMetaMask) {
   //geht nicht mehr so..
-  // getUserLists: returnt ListKey-Array (ui, keyAES)
-  // Loop: ...methods.iPNSname(id).call(); -> IPNS-Namen holen
-  // pushen: ListObject = { id, ipnsName, AESKey} und return
-  const listIds = await userListManagementContract.methods
-    .fetchUserLists()
+  // getUserLists: returnt ListKey-Array (ui, keyAES)-
+  const myEncryptedAESKeys = await userListManagementContract.methods
+    .getUserLists(accountMetaMask)
     .call({ from: accountMetaMask });
-  const lists = [];
+  // Loop: ...methods.iPNSname(id).call(); -> IPNS-Namen holen
+  const returnListData = [];
+  myEncryptedAESKeys.map(async (object) => {
+    const iPNSname = await userListManagementContract.methods
+      .iPNSname(object.id)
+      .call();
+    const newReturnDataObject = {
+      id: object.id,
+      iPNSname: iPNSname,
+      encryptedAESKey: object.keyAES
+    };
+    returnListData.push(newReturnDataObject);
+  });
 
-  for (let id of listIds) {
-    const list = await userListManagementContract.methods.lists(id).call();
-    //alert(`fetched list id: ${list.id} and ipnsName: ${list.ipnsName}`);
-    const newListObject = { id: list.id, key: list.ipnsName };
-    lists.push(newListObject);
-  }
-  return lists; // Format bzw. Objekt überprüfen!
+  // pushen: ListObject = { id, ipnsName, AESKey} und return
+  return returnListData; // Format bzw. Objekt überprüfen!
 }
 
-export async function fetchListPeersBlockchain(accountMetaMask) {
-  // Parameter: ListenID
-  // Return: Adressen-Array (Strings)
+export async function fetchListPeersBlockchain(id) {
+  // Parameter: ListenID-
+  const peers = await userListManagementContract.methods
+    .getListUsers(id)
+    .call();
+  // Return: Adressen-Array (Strings oder anderes Format?)                    ------- !
+  return peers;
 }
 
 export async function deleteListBlockchain(id, accountMetaMask) {

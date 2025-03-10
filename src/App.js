@@ -5,7 +5,7 @@ import { uploadToPinata, fetchFromPinata, unpinFromPinata } from "./pinata";
 import { generateKeyPair } from "@libp2p/crypto/keys";
 import { saveToLocalStorage, loadFromLocalStorage } from "./storage";
 import "./App.css";
-import RSAKeyHandling from "./RSAEncryption";
+import RSAKeyHandling, { decryptRSA } from "./RSAEncryption";
 import { encryptRSA } from "./RSAEncryption";
 import {
   deserializeKeys,
@@ -19,7 +19,8 @@ import {
   createListBlockchain,
   fetchUserListsBlockchain,
   deleteListBlockchain,
-  getListIpnsName
+  getListIpnsName,
+  fetchListPeersBlockchain
 } from "./UserListManagementService";
 import { flushSync } from "react-dom";
 import { createAESKey, encryptAES } from "./AESEncryption";
@@ -139,7 +140,7 @@ const App = () => {
       (keyObj) => keyObj.id === list.id
     ).aESKey;
     const cid = await uploadToPinata(list, aESKey); // AES-Key hier auch mitgeben für Verschlüsselung des Contents-
-    ipnsKeys.map((l) => {
+    ipnsKeys.current.map((l) => {
       if (l.id == list.id) {
         republishToIpns(l.key, cid);
       }
@@ -150,40 +151,36 @@ const App = () => {
     clearLists();
 
     const fetchedLists = fetchUserListsBlockchain(accountMetaMask); // hier Blockchain-Anbindung neu machen -> retval: Array mit
-    // Objekten: {id: int, iPNSname: String, encryptedAESKey: String}
-    // AES-Keys entschlüsseln und -> Array (list id + aes key )
+    // Objekten: {id: int, iPNSname: String, encryptedAESKey: String}-
+    // AES-Keys entschlüsseln und -> Array (list id + aes key )-
+    (await fetchedLists).map(async (fl) => {
+      const aESKey = decryptRSA(fl.encryptedAESKey, rSAKeyPair.rSAPrivateKey);
+      aESKeys.current.push({ id: fl.id, aESKey: aESKey });
+      ipnsKeys.current.push({ id: fl.id, key: iPNSname });
+    });
 
-    // restliche ListenInfo (id, ipnsName) kommt in ipns-Array
-    // Loop: fetchListPeersBlockchain(id) -> return-Array kommt in Peer-UseState
+    // Loop: fetchListPeersBlockchain(id) -> return-Array kommt in Peer-UseState-
+    (await fetchedLists).map(async (fl) => {
+      const peers = fetchListPeersBlockchain(fl.id);
+      setPeerAdresses((prev) => [...prev, { id: fl.id, peers: peers }]);
+    });
     // folgende Zeilen dann anpassen bzw. löschen:
 
-    (await fetchedLists).map(async (fl) => {
-      // anpassen auf Array
-      setIpnsKeys((prev) => [...prev, fl]);
-    });
-
-    ipnsKeys.map(async (l) => {
+    ipnsKeys.current.map(async (l) => {
       // anpassen auf Array
       const keyPair = await deserializeKeys(l.key);
-      setDeserKeys((prev) => [...prev, keyPair.publicKey]);
+      deserKeys.current.push({ id: l.id, key: keyPair.publicKey });
     });
 
-    deserKeys.map(async (l) => {
-      const result = await resolveFromIpns(l);
-      const list = await fetchFromPinata(result.cid); // Parameter: AES-Key
-      // (in der fetchFromPinata() erfolgt die Entschlüsselung der Listen, JSON parsen)
+    deserKeys.current.map(async (l) => {
+      const result = await resolveFromIpns(l.key);
+      const aESKey = aESKeys.current.find(
+        (keyObj) => keyObj.id === l.id
+      ).aESKey;
+      const list = await fetchFromPinata(result.cid, aESKey); // Parameter: AES-Key-
+      // (in der fetchFromPinata() erfolgt die Entschlüsselung der Listen, JSON parsen)-
       setLists((prev) => [...prev, list]);
     });
-
-    /*
-    ipnsKeys.map(async (l) => {
-      const keyPair = await deserializeKeys(l.key);
-      alert(`fetchlist keydeser: ${keyPair.publicKey}`);
-      const result = await resolveFromIpns(keyPair.publicKey);
-      const list = await fetchFromPinata(result.cid);
-      setLists((prev) => [...prev, list]);
-    });
-*/
   };
 
   const deleteList = async (deletedList) => {
@@ -229,7 +226,6 @@ const App = () => {
       list.id === updatedList.id ? updatedList : list
     );
     setLists(updatedLists);
-    // uploadList(updatedList); // Re-upload the updated list to Pinata
   };
 
   const shareList = () => {

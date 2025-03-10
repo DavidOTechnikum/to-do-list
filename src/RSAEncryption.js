@@ -11,13 +11,31 @@ export const encryptRSA = async (aESKey, rSAPublicKey) => {
     rSAPublicKey,
     exportedAESKey
   );
-  return encryptedAESKey;
+  const encryptedAESKeyString = new TextDecoder().decode(encryptedAESKey);
+  return encryptedAESKeyString;
 };
 
-export const decryptRSA = async () => {};
+export const decryptRSA = async (encryptedAESKeyString, rSAPrivateKey) => {
+  const encryptedAESKey = new TextEncoder().encode(
+    encryptedAESKeyString
+  ).buffer;
+  const decryptedAESKey = await crypto.subtle.decrypt({
+    name: "RSA-OEAP",
+    rSAPrivateKey,
+    encryptedAESKey
+  });
+  const aESKey = await crypto.subtle.importKey(
+    "raw",
+    decryptedAESKey,
+    { name: "AES-GCM" },
+    true,
+    ["encrypt", "decrypt"]
+  );
+  return aESKey;
+};
 
-const RSAKeyHandling = ({ accountMetaMask }) => {
-  const [rSAKeyPair, setRSAKeyPair] = useState(null);
+const RSAKeyHandling = ({ accountMetaMask, rSAKeyPair }) => {
+  const [rSAKeyPair, setRSAKeyPair] = useState(rSAKeyPair);
 
   const generateRSAKeyPair = async () => {
     const rSAKeys = await window.crypto.subtle.generateKey(

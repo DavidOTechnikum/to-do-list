@@ -1,4 +1,5 @@
 import { PinataSDK } from "pinata-web3";
+import { decryptAES, encryptAES } from "./AESEncryption";
 
 const pinata = new PinataSDK({
   pinataJwt:
@@ -6,30 +7,30 @@ const pinata = new PinataSDK({
   pinataGateway: "copper-quiet-swordtail-130.mypinata.cloud"
 });
 
-// Verschlüsselung! -> siehe GPT-Anleitung
-export const uploadToPinata = async (list) => {
+// Verschlüsselung!-
+export const uploadToPinata = async (list, aESKey) => {
+  const ciphertextIv = encryptAES(list, aESKey);
+  const ciphertextIvString = new TextDecoder().decode(ciphertextIv);
   try {
-    // encryption AES
-    // Blob machen und nächste Zeile anpassen:
-    const result = await pinata.upload.json(list); // upload Blob
-    return result.IpfsHash; // The IPFS hash (CID)
+    const result = await pinata.upload.json({ list: ciphertextIvString }); // für Pinata-Upload: verschlüsselte Daten als String
+    alert(`Pinata upload successful`); // in Objekt eingebettet, weil JSON-Upload am besten funktioniert
+    return result.IpfsHash;
   } catch (error) {
     console.error("Error uploading to Pinata:", error);
     throw error;
   }
 };
 
-export const fetchFromPinata = async (cid) => {
-  // Parameter: AES-Key
+export const fetchFromPinata = async (cid, aESKey) => {
+  // Parameter: AES-Key-
   alert(`fetching from pinata started`);
   try {
     const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
-    // decryption AES -> Blob decryption, dann JSON parsen, nächste Zeile anpassen:
-    const jsonData = await response.json();
-    return jsonData;
+    const encryptedList = new TextEncoder().encode(response.list); // Pinata: JSON wurde gespeichert, enthält versch. Daten
+    const list = decryptAES(encryptedList, aESKey);
+    return list;
   } catch (error) {
-    console.error("Error fetching from Pinata:", error);
-    throw error;
+    return null;
   }
 };
 
