@@ -4,11 +4,19 @@ import {
   getRSAPubKeyBlockchain
 } from "./UserListManagementService";
 
-export const encryptRSA = async () => {};
+export const encryptRSA = async (aESKey, rSAPublicKey) => {
+  const exportedAESKey = await crypto.subtle.exportKey("raw", aESKey);
+  const encryptedAESKey = await crypto.subtle.encrypt(
+    { name: "RSA-OAEP" },
+    rSAPublicKey,
+    exportedAESKey
+  );
+  return encryptedAESKey;
+};
 
 export const decryptRSA = async () => {};
 
-const RSAEncryption = ({ accountMetaMask }) => {
+const RSAKeyHandling = ({ accountMetaMask }) => {
   const [rSAKeyPair, setRSAKeyPair] = useState(null);
 
   const generateRSAKeyPair = async () => {
@@ -104,4 +112,4 @@ const RSAEncryption = ({ accountMetaMask }) => {
   );
 };
 
-export default RSAEncryption;
+export default RSAKeyHandling;

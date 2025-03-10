@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import TodoList from "./TodoList";
 import AddForm from "./AddForm";
 import { uploadToPinata, fetchFromPinata, unpinFromPinata } from "./pinata";
 import { generateKeyPair } from "@libp2p/crypto/keys";
 import { saveToLocalStorage, loadFromLocalStorage } from "./storage";
 import "./App.css";
-import RSAEncryption from "./RSAEncryption";
+import RSAKeyHandling from "./RSAEncryption";
+import { encryptRSA } from "./RSAEncryption";
 import {
   deserializeKeys,
   newPublishToIpns,
@@ -21,6 +22,7 @@ import {
   getListIpnsName
 } from "./UserListManagementService";
 import { flushSync } from "react-dom";
+import { createAESKey, encryptAES } from "./AESEncryption";
 
 const App = () => {
   // for MetaMask:
@@ -60,12 +62,17 @@ const App = () => {
   }, []);
 
   // for Lists:
-  const [lists, setLists] = useState([]); // memory for rendering right now
-  const [deserKeys, setDeserKeys] = useState([]); // kein useState! normales Array
-  const [ipnsKeys, setIpnsKeys] = useState([]); // hier auch
-  // notwendige Variable: RSA-Keypair (aus RSAEncryption.js)
-  // notwendige Arrays: AESKeys (mit ListID),
-  // neues useState: [ListID + Peer-Adressen]
+  const [lists, setLists] = useState([]); // memory for rendering right now                         ------------ Arrays and Variables
+  //const [deserKeys, setDeserKeys] = useState([]); // kein useState! normales Array-
+  const deserKeys = useRef([]);
+  //const [ipnsKeys, setIpnsKeys] = useState([]); // hier auch-
+  const ipnsKeys = useRef([]);
+  // notwendige Variable: RSA-Keypair (aus RSAEncryption.js)-
+  // notwendige Arrays: AESKeys (mit ListID),-
+  // neues useState: [ListID + Peer-Adressen]-
+  const rSAKeyPair = useRef();
+  const aESKeys = useRef([]);
+  const [peerAdresses, setPeerAdresses] = useState([]);
 
   /*
   const [ipnsKeys, setIpnsKeys] = useState(
@@ -86,16 +93,20 @@ const App = () => {
 */
 
   const addList = async (title) => {
-    const keyPair = await generateKeyPair("Ed25519"); // Namen hier im Block verbessern: key pair wird bei IPNS genutzt
-    const serializedKeyPair = serializeKeys(keyPair);
+    const iPNSKeyPair = await generateKeyPair("Ed25519"); // Namen hier im Block verbessern: key pair wird bei IPNS genutzt-
+    const serializedIPNSKeyPair = serializeKeys(iPNSKeyPair);
     const newList = { id: Date.now(), title, tasks: [] };
-    // AES-Key erstellen (-> Array mit [id + aes key])
-    // AES-Key mit eigenem RSA-Pubkey verschlüsseln - RSA-Encrypt
+    // AES-Key erstellen (-> Array mit [id + aes key])-
+    const aESKey = createAESKey;
+    aESKeys.current.push({ id: newList.id, aESKey: aESKey });
+    // AES-Key mit eigenem RSA-Pubkey verschlüsseln - RSA-Encrypt-
+    const encryptedAESKey = encryptRSA(aESKey, rSAKeyPair.rSAPublicKey);
     try {
       await createListBlockchain(
-        // Parameter anpassen: verschlüsselten AESKey inkludieren
+        // Parameter anpassen: verschlüsselten AESKey inkludieren-
         newList.id,
-        serializedKeyPair,
+        serializedIPNSKeyPair,
+        encryptedAESKey,
         accountMetaMask
       );
     } catch (error) {
@@ -103,14 +114,11 @@ const App = () => {
     }
 
     setLists((prev) => [...prev, newList]);
-    const cid = await uploadToPinata(newList); // AES-Key mitgeben und dann in der Funktion alles verschlüsseln und hochladen
-    await newPublishToIpns(cid, keyPair);
+    const cid = await uploadToPinata(newList, aESKey); // AES-Key mitgeben und dann in der Funktion alles verschlüsseln und hochladen-
+    await newPublishToIpns(cid, iPNSKeyPair);
 
-    // storing to ipnsKeys necessary for uploadList()
-    setIpnsKeys((prev) => [
-      ...prev,
-      { id: newList.id, key: serializedKeyPair }
-    ]);
+    // storing to ipnsKeys necessary for uploadList()-
+    ipnsKeys.current.push({ id: newList.id, key: serializedIPNSKeyPair });
   };
 
   /*
@@ -127,8 +135,10 @@ const App = () => {
 */
 
   const uploadList = async (list) => {
-    const cid = await uploadToPinata(list); // AES-Key hier auch mitgeben für Verschlüsselung des Contents
-    alert(`uploading: pinata done`);
+    const aESKey = aESKeys.current.find(
+      (keyObj) => keyObj.id === list.id
+    ).aESKey;
+    const cid = await uploadToPinata(list, aESKey); // AES-Key hier auch mitgeben für Verschlüsselung des Contents-
     ipnsKeys.map((l) => {
       if (l.id == list.id) {
         republishToIpns(l.key, cid);
@@ -139,9 +149,10 @@ const App = () => {
   const fetchLists = async () => {
     clearLists();
 
-    const fetchedLists = fetchUserListsBlockchain(accountMetaMask); // hier Blockchain-Anbindung neu machen,
-    // hier kommen dann auch die verschlüsselten AES-Keys mit (LisObject: {id, ipnsName, AESKey})
+    const fetchedLists = fetchUserListsBlockchain(accountMetaMask); // hier Blockchain-Anbindung neu machen -> retval: Array mit
+    // Objekten: {id: int, iPNSname: String, encryptedAESKey: String}
     // AES-Keys entschlüsseln und -> Array (list id + aes key )
+
     // restliche ListenInfo (id, ipnsName) kommt in ipns-Array
     // Loop: fetchListPeersBlockchain(id) -> return-Array kommt in Peer-UseState
     // folgende Zeilen dann anpassen bzw. löschen:
@@ -284,7 +295,10 @@ const App = () => {
       </div>
       <br></br>
       <div>
-        <RSAEncryption accountMetaMask={accountMetaMask} />
+        <RSAKeyHandling
+          accountMetaMask={accountMetaMask}
+          rSAKeyPair={rSAKeyPair}
+        />
       </div>
     </div>
   );

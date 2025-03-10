@@ -27,10 +27,15 @@ export async function loadBlockchainData(accountMetaMask) {
   }
 }
 
-// komplette Methode: Parameter anpassen (mein AES-Key)
-export async function createListBlockchain(id, ipnsName, accountMetaMask) {
+// komplette Methode: Parameter anpassen (mein AES-Key)-
+export async function createListBlockchain(
+  id,
+  ipnsName,
+  myEncryptedAESKey,
+  accountMetaMask
+) {
   await userListManagementContract.methods
-    .createList(id, ipnsName) // hier auch
+    .createList(id, ipnsName, myEncryptedAESKey) // hier auch-
     .send({ from: accountMetaMask });
 }
 
