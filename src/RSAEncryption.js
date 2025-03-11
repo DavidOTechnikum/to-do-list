@@ -16,9 +16,8 @@ export const encryptRSA = async (aESKey, rSAPublicKey) => {
 };
 
 export const decryptRSA = async (encryptedAESKeyString, rSAPrivateKey) => {
-  const encryptedAESKey = new TextEncoder().encode(
-    encryptedAESKeyString
-  ).buffer;
+  const encryptedAESKeyArray = new TextEncoder().encode(encryptedAESKeyString);
+  const encryptedAESKey = encryptedAESKeyArray.buffer.slice(0);
   const decryptedAESKey = await crypto.subtle.decrypt({
     name: "RSA-OEAP",
     rSAPrivateKey,
@@ -34,9 +33,47 @@ export const decryptRSA = async (encryptedAESKeyString, rSAPrivateKey) => {
   return aESKey;
 };
 
-const RSAKeyHandling = ({ accountMetaMask, _rSAKeyPair }) => {
-  const [rSAKeyPair, setRSAKeyPair] = useState(_rSAKeyPair);
+export const importRSAPublicKey = async (publicKeyString) => {
+  const publicKeyBuffer = base64ToArrayBuffer(publicKeyString);
+  const publicKey = await crypto.subtle.importKey(
+    "spki",
+    publicKeyBuffer,
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-256"
+    },
+    true,
+    ["encrypt"]
+  );
+  return publicKey;
+};
 
+const importRSAPrivateKey = async (privateKeyString) => {
+  const privateKeyBuffer = base64ToArrayBuffer(privateKeyString);
+  const privateKey = await crypto.subtle.importKey(
+    "pkcs8",
+    privateKeyBuffer,
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-256"
+    },
+    true,
+    ["decrypt"]
+  );
+  return privateKey;
+};
+
+const base64ToArrayBuffer = (base64) => {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+};
+
+const RSAKeyHandling = ({ accountMetaMask, rSAKeyPair }) => {
   const generateRSAKeyPair = async () => {
     const rSAKeys = await window.crypto.subtle.generateKey(
       {
@@ -69,8 +106,12 @@ const RSAKeyHandling = ({ accountMetaMask, _rSAKeyPair }) => {
       return error;
     }
 
-    setRSAKeyPair(rSAKeyData);
+    rSAKeyPair.current = rSAKeys;
     saveToFile(JSON.stringify(rSAKeyData, null, 2), "keypair.json");
+  };
+
+  const arrayBufferToBase64 = (buffer) => {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
   };
 
   const saveToFile = (content, fileName) => {
@@ -84,33 +125,33 @@ const RSAKeyHandling = ({ accountMetaMask, _rSAKeyPair }) => {
   };
 
   const loadFile = (event) => {
-    setRSAKeyPair(null);
+    rSAKeyPair.current = null;
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const data = JSON.parse(e.target.result);
-
+        const data = await JSON.parse(e.target.result);
         const storedRSAPubKey = await getRSAPubKeyBlockchain(accountMetaMask);
         if (storedRSAPubKey === data.rSAPublicKey) {
-          setRSAKeyPair(data);
+          const rSAPrivateKey = await importRSAPrivateKey(data.rSAPrivateKey);
+          const rSAPublicKey = await importRSAPublicKey(data.rSAPublicKey);
+          rSAKeyPair.current = {
+            privateKey: rSAPrivateKey,
+            publicKey: rSAPublicKey
+          };
         } else {
           alert(`loaded key not stored in blockchain`);
           return;
         }
 
-        alert(`Loaded key pair: ${data.rSAPublicKey}`);
+        alert(`Loaded key pair: ${rSAKeyPair.current.publicKey}`);
       } catch (error) {
         alert(`Invalid file format`);
       }
     };
     reader.readAsText(file);
-  };
-
-  const arrayBufferToBase64 = (buffer) => {
-    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
   };
 
   return (

@@ -29,7 +29,8 @@ export const encryptAES = async (list, aESKey) => {
   combined.set(iv);
   combined.set(encryptedArray, iv.length);
 
-  return combined;
+  const returnbuffer = combined.buffer.slice(0);
+  return returnbuffer;
 };
 
 export const decryptAES = async (combined, aESKey) => {

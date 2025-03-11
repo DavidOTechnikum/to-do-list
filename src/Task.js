@@ -17,58 +17,6 @@ const Task = ({
     editTask(task.id, text);
     setEditing(false);
   };
-  /*
-  const handleEdit = () => {
-    updateLists((prev) => {
-      const updatedLists = prev.map((list) => {
-        if (list.id === listId) {
-          const updatedTasks = list.tasks.map((t) =>
-            t.id === task.id ? { ...t, text } : t
-          );
-          return { ...list, tasks: updatedTasks };
-        }
-        return list;
-      });
-      saveToLocalStorage("todoLists", updatedLists);
-      return updatedLists;
-    });
-    setEditing(false);
-  };
-  */
-
-  /*
-  const deleteTask = () => {
-    updateLists((prev) => {
-      const updatedLists = prev.map((list) => {
-        if (list.id === listId) {
-          const updatedTasks = list.tasks.filter((t) => t.id !== task.id);
-          return { ...list, tasks: updatedTasks };
-        }
-        return list;
-      });
-      saveToLocalStorage("todoLists", updatedLists);
-      return updatedLists;
-    });
-  };
-*/
-
-  /*
-  const toggleCompleted = () => {
-    updateLists((prev) => {
-      const updatedLists = prev.map((list) => {
-        if (list.id === listId) {
-          const updatedTasks = list.tasks.map((t) =>
-            t.id === task.id ? { ...t, completed: !t.completed } : t
-          );
-          return { ...list, tasks: updatedTasks };
-        }
-        return list;
-      });
-      saveToLocalStorage("todoLists", updatedLists);
-      return updatedLists;
-    });
-  };
-*/
 
   return (
     <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>

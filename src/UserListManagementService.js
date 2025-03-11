@@ -34,11 +34,12 @@ export async function createListBlockchain(
   myEncryptedAESKey,
   accountMetaMask
 ) {
-  await userListManagementContract.methods
-    .createList(id, ipnsName, myEncryptedAESKey) // hier auch-
+  alert(`now calling: ${id}, ${ipnsName}, ${myEncryptedAESKey}`);
+  const tx = await userListManagementContract.methods
+    .createList(id, ipnsName, myEncryptedAESKey)
     .send({ from: accountMetaMask });
+  alert(`log: ${tx.transactionHash}`);
 }
-
 // format for list array: { id: newList.id, key: serializedKeyPair }
 
 export async function fetchUserListsBlockchain(accountMetaMask) {
@@ -84,10 +85,24 @@ export async function deleteListBlockchain(id, accountMetaMask) {
   }
 }
 
-export async function shareListBlockchain() {
-  // Parameter: Peer-Adresse, ListenID, verschlüsselten AES-Key
+export async function shareListBlockchain(
+  peer,
+  id,
+  peerEncryptedAESKeyString,
+  accountMetaMask
+) {
+  // Parameter: Peer-Adresse, ListenID, verschlüsselten AES-Key-
   // shareList() aufrufen: peer, id, keyAES
-  // retval: bool
+  try {
+    await userListManagementContract.methods.shareList(
+      peer,
+      id,
+      peerEncryptedAESKeyString
+    );
+    send({ from: accountMetaMask });
+  } catch (error) {
+    return error;
+  }
 }
 
 export async function unshareListBlockchain() {

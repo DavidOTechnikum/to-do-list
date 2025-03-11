@@ -6,7 +6,7 @@ import { generateKeyPair } from "@libp2p/crypto/keys";
 import { saveToLocalStorage, loadFromLocalStorage } from "./storage";
 import "./App.css";
 import RSAKeyHandling, { decryptRSA } from "./RSAEncryption";
-import { encryptRSA } from "./RSAEncryption";
+import { encryptRSA, importRSAPublicKey } from "./RSAEncryption";
 import {
   deserializeKeys,
   newPublishToIpns,
@@ -20,7 +20,9 @@ import {
   fetchUserListsBlockchain,
   deleteListBlockchain,
   getListIpnsName,
-  fetchListPeersBlockchain
+  fetchListPeersBlockchain,
+  getRSAPubKeyBlockchain,
+  shareListBlockchain
 } from "./UserListManagementService";
 import { flushSync } from "react-dom";
 import { createAESKey, encryptAES } from "./AESEncryption";
@@ -73,7 +75,7 @@ const App = () => {
   // neues useState: [ListID + Peer-Adressen]-
   const rSAKeyPair = useRef();
   const aESKeys = useRef([]);
-  const [peerAdresses, setPeerAdresses] = useState([]);
+  const [peerAddresses, setPeerAddresses] = useState([]);
 
   /*
   const [ipnsKeys, setIpnsKeys] = useState(
@@ -102,8 +104,12 @@ const App = () => {
     alert(`starting aes key gen`);
     const aESKey = await createAESKey();
     aESKeys.current.push({ id: newList.id, aESKey: aESKey });
+    alert(`rsa key: ${rSAKeyPair.current.publicKey}`);
     // AES-Key mit eigenem RSA-Pubkey verschlüsseln - RSA-Encrypt-
-    const encryptedAESKey = encryptRSA(aESKey, rSAKeyPair.rSAPublicKey);
+    const encryptedAESKey = await encryptRSA(
+      aESKey,
+      rSAKeyPair.current.publicKey
+    );
     try {
       await createListBlockchain(
         // Parameter anpassen: verschlüsselten AESKey inkludieren-
@@ -122,6 +128,10 @@ const App = () => {
 
     // storing to ipnsKeys necessary for uploadList()-
     ipnsKeys.current.push({ id: newList.id, key: serializedIPNSKeyPair });
+    setPeerAddresses((prev) => [
+      ...prev,
+      { id: newList.id, peer: accountMetaMask }
+    ]); // -> Datentyp?
   };
 
   /*
@@ -150,21 +160,27 @@ const App = () => {
   };
 
   const fetchLists = async () => {
+    // hier weiter debuggen !!!
     clearLists();
 
     const fetchedLists = fetchUserListsBlockchain(accountMetaMask); // hier Blockchain-Anbindung neu machen -> retval: Array mit
     // Objekten: {id: int, iPNSname: String, encryptedAESKey: String}-
     // AES-Keys entschlüsseln und -> Array (list id + aes key )-
     (await fetchedLists).map(async (fl) => {
-      const aESKey = decryptRSA(fl.encryptedAESKey, rSAKeyPair.rSAPrivateKey);
+      const aESKey = decryptRSA(
+        fl.encryptedAESKey,
+        rSAKeyPair.current.privateKey
+      );
       aESKeys.current.push({ id: fl.id, aESKey: aESKey });
       ipnsKeys.current.push({ id: fl.id, key: fl.iPNSname });
     });
 
     // Loop: fetchListPeersBlockchain(id) -> return-Array kommt in Peer-UseState-
     (await fetchedLists).map(async (fl) => {
-      const peers = fetchListPeersBlockchain(fl.id);
-      setPeerAdresses((prev) => [...prev, { id: fl.id, peers: peers }]);
+      const peers = await fetchListPeersBlockchain(fl.id);
+      for (let i = 0; i < peers.length; i++) {
+        setPeerAddresses((prev) => [...prev, { id: fl.id, peer: peers[i] }]);
+      }
     });
     // folgende Zeilen dann anpassen bzw. löschen:
 
@@ -215,7 +231,7 @@ const App = () => {
     deserKeys.current = deserKeys.current.filter(
       (item) => item.id !== deletedList.id
     );
-    setPeerAdresses((l) => l.filter((item) => item.id !== deletedList.id));
+    setPeerAddresses((l) => l.filter((item) => item.id !== deletedList.id));
   };
 
   const clearLists = () => {
@@ -226,7 +242,7 @@ const App = () => {
     ipnsKeys.current = [];
     aESKeys.current = [];
     deserKeys.current = [];
-    setPeerAdresses(resetPeerAddresses);
+    setPeerAddresses(resetPeerAddresses);
   };
 
   const updateList = (updatedList) => {
@@ -236,17 +252,34 @@ const App = () => {
     setLists(updatedLists);
   };
 
-  const shareList = (id, peer) => {
+  const shareList = async (id, peer) => {
     alert(`sharing`);
-    // (GUI-Input-Feld:) Peer-Adresse, Button-Click: Adresse & ListenID
-    // Blockchain-Funktion: Peer-RSA-Pubkey holen, AES-Key verschlüsseln, Share-Funktion aufrufen
-    // retval checken (bool?)
-    // Peer-Adresse mit ListenID in useState
+    // (GUI-Input-Feld:) Peer-Adresse, Button-Click: Adresse & ListenID-
+    try {
+      const peerRSAPubKeyString = await getRSAPubKeyBlockchain(peer);
+      const peerRSAPublicKey = await importRSAPublicKey(peerRSAPubKeyString);
+      const peerEncryptedAESKeyString = await encryptRSA(
+        aESKeys.current.find((keyObj) => keyObj.id === id).aESKey,
+        peerRSAPublicKey
+      );
+      await shareListBlockchain(
+        peer,
+        id,
+        peerEncryptedAESKeyString,
+        accountMetaMask
+      );
+    } catch (error) {
+      alert(`sharing unsuccessful, error: ${error}`);
+      return;
+    }
+    setPeerAddresses((prev) => [...prev, { id: id, peer: peer }]);
+    // Blockchain-Funktion: Peer-RSA-Pubkey holen, AES-Key verschlüsseln, Share-Funktion aufrufen-
+    // Peer-Adresse mit ListenID in useState-
   };
 
   const unshareList = (id, peer) => {
     alert(`unsharing`);
-    // (GUI-Button:) Peer-Adresse - Button-Click: Adresse & ListenID
+    // (GUI-Button:) Peer-Adresse - Button-Click: Adresse & ListenID-
     // Blockchain-Funktion: ruft SC auf -
     //                      ...Test auf requires (z.B. unshare mit mir selbst als letztem User), sonst return und retval prüfen
     //                      ...macht: SC-Funktion aufrufen, User löschen etc.
@@ -291,7 +324,7 @@ const App = () => {
             updateList={updateList}
             uploadList={uploadList}
             deleteList={deleteList}
-            peers={peerAdresses.peers}
+            peers={peerAddresses}
             shareList={shareList}
             unshareList={unshareList}
           />

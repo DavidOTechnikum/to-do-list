@@ -9,7 +9,7 @@ const pinata = new PinataSDK({
 
 // Verschlüsselung!-
 export const uploadToPinata = async (list, aESKey) => {
-  const ciphertextIv = encryptAES(list, aESKey);
+  const ciphertextIv = await encryptAES(list, aESKey);
   const ciphertextIvString = new TextDecoder().decode(ciphertextIv);
   try {
     const result = await pinata.upload.json({ list: ciphertextIvString }); // für Pinata-Upload: verschlüsselte Daten als String

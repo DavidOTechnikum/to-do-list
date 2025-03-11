@@ -2,9 +2,19 @@ import React, { useState } from "react";
 import Task from "./Task";
 import AddForm from "./AddForm";
 
-const TodoList = ({ list, updateList, uploadList, deleteList }) => {
+const TodoList = ({
+  list,
+  updateList,
+  uploadList,
+  deleteList,
+  peerAddresses,
+  shareList,
+  unshareList
+}) => {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(list.title);
+  const [showPeers, setShowPeers] = useState(false);
+  const [address, setAddress] = useState("");
 
   const handleEditTitle = () => {
     const updatedList = { ...list, title }; // creates new object with the properties of the ...object
@@ -42,13 +52,6 @@ const TodoList = ({ list, updateList, uploadList, deleteList }) => {
     updateList(updatedList);
   };
 
-  // folgende Methoden kommen nur mit und werden im GUI aufgerufen, also die folgenden Zeilen kommen wieder weg:
-  const handlePeerList = () => {};
-
-  const shareList = () => {};
-
-  const unshareList = () => {};
-
   // Aufklappliste mit useState-Bools für Edit-Mode mit mitgegebenen Peer-Adressen
   // Share- und Unshare-Buttons sowie Share-Input-Feld (für Peer-Adresse) einbauen
   return (
@@ -74,6 +77,34 @@ const TodoList = ({ list, updateList, uploadList, deleteList }) => {
       ))}
       <button onClick={() => uploadList(list)}>Upload to IPFS</button>
       <button onClick={() => deleteList(list)}>Delete list</button>
+      <p></p>
+      {showPeers ? (
+        <div>
+          {peerAddresses
+            .filter((peerObj) => peerObj.id === list.id)
+            .map((peerObj) => (
+              <span key={peerObj.peer}>
+                {peerObj.peer}
+                <button onClick={() => unshareList(list.id, peerObj.peer)}>
+                  Unshare
+                </button>
+              </span>
+            ))}
+
+          <div style={{ display: "flex", gap: "8px" }}>
+            <input
+              type="text"
+              placeholder="Peer address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+            <button onClick={() => shareList(list.id, address)}>Share</button>
+          </div>
+          <button onClick={() => setShowPeers(false)}>"Hide peers"</button>
+        </div>
+      ) : (
+        <button onClick={() => setShowPeers(true)}>"Show peers"</button>
+      )}
     </div>
   );
 };
