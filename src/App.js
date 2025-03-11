@@ -97,8 +97,10 @@ const App = () => {
     const iPNSKeyPair = await generateKeyPair("Ed25519"); // Namen hier im Block verbessern: key pair wird bei IPNS genutzt-
     const serializedIPNSKeyPair = serializeKeys(iPNSKeyPair);
     const newList = { id: Date.now(), title, tasks: [] };
+    deserKeys.current.push({ id: newList.id, key: iPNSKeyPair.publicKey });
     // AES-Key erstellen (-> Array mit [id + aes key])-
-    const aESKey = createAESKey;
+    alert(`starting aes key gen`);
+    const aESKey = await createAESKey();
     aESKeys.current.push({ id: newList.id, aESKey: aESKey });
     // AES-Key mit eigenem RSA-Pubkey verschlüsseln - RSA-Encrypt-
     const encryptedAESKey = encryptRSA(aESKey, rSAKeyPair.rSAPublicKey);
@@ -156,7 +158,7 @@ const App = () => {
     (await fetchedLists).map(async (fl) => {
       const aESKey = decryptRSA(fl.encryptedAESKey, rSAKeyPair.rSAPrivateKey);
       aESKeys.current.push({ id: fl.id, aESKey: aESKey });
-      ipnsKeys.current.push({ id: fl.id, key: iPNSname });
+      ipnsKeys.current.push({ id: fl.id, key: fl.iPNSname });
     });
 
     // Loop: fetchListPeersBlockchain(id) -> return-Array kommt in Peer-UseState-
@@ -184,9 +186,9 @@ const App = () => {
   };
 
   const deleteList = async (deletedList) => {
-    // Löschen im Smart Contract
-    // unpinnen im Pinata
-    // löschen aus Liste-Mapping und ipnsKeys-Array, AES-Key-Array, Peer-UseState
+    // Löschen im Smart Contract-
+    // unpinnen im Pinata-
+    // löschen aus Liste-Mapping und ipnsKeys-Array, AES-Key-Array, deserKeys, Peer-UseState-
 
     try {
       await deleteListBlockchain(deletedList.id, accountMetaMask);
@@ -195,30 +197,36 @@ const App = () => {
       alert(`deletion from blockchain unsuccessful`);
       return;
     }
-
-    ipnsKeys.map(async (l) => {
-      // alles auf Array
+    // unpin:-
+    deserKeys.current.map(async (l) => {
       if (l.id == deletedList.id) {
-        const keyPair = await deserializeKeys(l.key);
-        const cid = resolveFromIpns(keyPair.publicKey);
+        const cid = resolveFromIpns(l.key);
         await unpinFromPinata(cid);
       }
     });
 
     setLists((l) => l.filter((item) => item.id !== deletedList.id));
-    setIpnsKeys((k) => k.filter((item) => item.id !== deletedList.id));
-    // AES-Key lokal rauslöschen
-    // Peer-UseState löschen
+    ipnsKeys.current = ipnsKeys.current.filter(
+      (item) => item.id !== deletedList.id
+    );
+    aESKeys.current = aESKeys.current.filter(
+      (item) => item.id !== deletedList.id
+    );
+    deserKeys.current = deserKeys.current.filter(
+      (item) => item.id !== deletedList.id
+    );
+    setPeerAdresses((l) => l.filter((item) => item.id !== deletedList.id));
   };
 
   const clearLists = () => {
-    // Arrays austauschen, AES-Keys, Peer-UseState auch einbauen
+    // Arrays austauschen, AES-Keys, Peer-UseState auch einbauen-
     const resetList = [];
-    const resetDeserList = [];
-    const resetIpnsKeys = [];
+    const resetPeerAddresses = [];
     setLists(resetList);
-    setDeserKeys(resetDeserList);
-    setIpnsKeys(resetIpnsKeys);
+    ipnsKeys.current = [];
+    aESKeys.current = [];
+    deserKeys.current = [];
+    setPeerAdresses(resetPeerAddresses);
   };
 
   const updateList = (updatedList) => {
@@ -228,14 +236,16 @@ const App = () => {
     setLists(updatedLists);
   };
 
-  const shareList = () => {
+  const shareList = (id, peer) => {
+    alert(`sharing`);
     // (GUI-Input-Feld:) Peer-Adresse, Button-Click: Adresse & ListenID
     // Blockchain-Funktion: Peer-RSA-Pubkey holen, AES-Key verschlüsseln, Share-Funktion aufrufen
     // retval checken (bool?)
     // Peer-Adresse mit ListenID in useState
   };
 
-  const unShareList = () => {
+  const unshareList = (id, peer) => {
+    alert(`unsharing`);
     // (GUI-Button:) Peer-Adresse - Button-Click: Adresse & ListenID
     // Blockchain-Funktion: ruft SC auf -
     //                      ...Test auf requires (z.B. unshare mit mir selbst als letztem User), sonst return und retval prüfen
@@ -281,6 +291,9 @@ const App = () => {
             updateList={updateList}
             uploadList={uploadList}
             deleteList={deleteList}
+            peers={peerAdresses.peers}
+            shareList={shareList}
+            unshareList={unshareList}
           />
         ))}
       </div>

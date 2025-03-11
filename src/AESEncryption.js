@@ -1,13 +1,19 @@
 export const createAESKey = async () => {
-  const aESKey = await crypto.subtle.generateKey(
-    {
-      name: "AES-GCM",
-      length: 256
-    },
-    true,
-    ["encrypt", "decrypt"]
-  );
-  return aESKey;
+  try {
+    const aESKey = await crypto.subtle.generateKey(
+      {
+        name: "AES-GCM",
+        length: 256
+      },
+      true,
+      ["encrypt", "decrypt"]
+    );
+    alert(`generated key: ${aESKey}`);
+    return aESKey;
+  } catch (error) {
+    alert(`key gen unsuccessful`);
+    return null;
+  }
 };
 
 export const encryptAES = async (list, aESKey) => {

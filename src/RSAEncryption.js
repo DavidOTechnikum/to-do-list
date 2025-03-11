@@ -34,8 +34,8 @@ export const decryptRSA = async (encryptedAESKeyString, rSAPrivateKey) => {
   return aESKey;
 };
 
-const RSAKeyHandling = ({ accountMetaMask, rSAKeyPair }) => {
-  const [rSAKeyPair, setRSAKeyPair] = useState(rSAKeyPair);
+const RSAKeyHandling = ({ accountMetaMask, _rSAKeyPair }) => {
+  const [rSAKeyPair, setRSAKeyPair] = useState(_rSAKeyPair);
 
   const generateRSAKeyPair = async () => {
     const rSAKeys = await window.crypto.subtle.generateKey(
