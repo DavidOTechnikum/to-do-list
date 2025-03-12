@@ -11,18 +11,23 @@ export const encryptRSA = async (aESKey, rSAPublicKey) => {
     rSAPublicKey,
     exportedAESKey
   );
-  const encryptedAESKeyString = new TextDecoder().decode(encryptedAESKey);
+  //const encryptedAESKeyString = new TextDecoder().decode(encryptedAESKey);
+  const encryptedAESKeyString = arrayBufferToBase64(encryptedAESKey);
   return encryptedAESKeyString;
 };
 
 export const decryptRSA = async (encryptedAESKeyString, rSAPrivateKey) => {
-  const encryptedAESKeyArray = new TextEncoder().encode(encryptedAESKeyString);
-  const encryptedAESKey = encryptedAESKeyArray.buffer.slice(0);
-  const decryptedAESKey = await crypto.subtle.decrypt({
-    name: "RSA-OEAP",
+  //const encryptedAESKeyArray = new TextEncoder().encode(encryptedAESKeyString);
+  //const encryptedAESKey = encryptedAESKeyArray.buffer.slice(0);
+  const encryptedAESKey = base64ToArrayBuffer(encryptedAESKeyString);
+
+  const decryptedAESKey = await crypto.subtle.decrypt(
+    {
+      name: "RSA-OAEP"
+    },
     rSAPrivateKey,
     encryptedAESKey
-  });
+  );
   const aESKey = await crypto.subtle.importKey(
     "raw",
     decryptedAESKey,
@@ -30,6 +35,7 @@ export const decryptRSA = async (encryptedAESKeyString, rSAPrivateKey) => {
     true,
     ["encrypt", "decrypt"]
   );
+
   return aESKey;
 };
 
@@ -72,6 +78,15 @@ const base64ToArrayBuffer = (base64) => {
   }
   return bytes.buffer;
 };
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
 
 const RSAKeyHandling = ({ accountMetaMask, rSAKeyPair }) => {
   const generateRSAKeyPair = async () => {

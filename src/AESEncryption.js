@@ -34,8 +34,14 @@ export const encryptAES = async (list, aESKey) => {
 };
 
 export const decryptAES = async (combined, aESKey) => {
+  alert(`combined: ${combined}`);
+  if (combined.byteLength < 13) {
+    throw new Error("invalid ciphertext: too short for AES-GCM decryption");
+  }
   const iv = combined.slice(0, 12); // 12 Bytes am Anfang -> IV
   const ciphertext = combined.slice(12); // Rest: Ciphertext
+
+  alert(`IV length: ${iv.length} and IV Data: ${iv}`);
 
   try {
     const decryptedBuffer = await crypto.subtle.decrypt(
@@ -44,7 +50,7 @@ export const decryptAES = async (combined, aESKey) => {
       ciphertext
     );
 
-    const decryptedString = new TextDecoder.decode(decryptedBuffer);
+    const decryptedString = new TextDecoder().decode(decryptedBuffer);
     return JSON.parse(decryptedString);
   } catch (error) {
     alert(`AES decryption failed: ${error}`);

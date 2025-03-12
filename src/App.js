@@ -116,8 +116,7 @@ const App = () => {
         // Parameter anpassen: verschlüsselten AESKey inkludieren-
         newList.id,
         serializedIPNSKeyPair,
-        encryptedAESKey,
-        accountMetaMask
+        encryptedAESKey
       );
     } catch (error) {
       return;
@@ -163,43 +162,66 @@ const App = () => {
   const fetchLists = async () => {
     // hier weiter debuggen !!!
     clearLists();
+    if (rSAKeyPair.current == null) {
+      alert(`no RSA Key set`);
+      return;
+    }
 
     const fetchedLists = fetchUserListsBlockchain(accountMetaMask); // hier Blockchain-Anbindung neu machen -> retval: Array mit
     // Objekten: {id: int, iPNSname: String, encryptedAESKey: String}-
     // AES-Keys entschlüsseln und -> Array (list id + aes key )-
-    (await fetchedLists).map(async (fl) => {
-      const aESKey = decryptRSA(
-        fl.encryptedAESKey,
-        rSAKeyPair.current.privateKey
-      );
-      aESKeys.current.push({ id: fl.id, aESKey: aESKey });
-      ipnsKeys.current.push({ id: fl.id, key: fl.iPNSname });
-    });
+    await Promise.all(
+      (
+        await fetchedLists
+      ).map(async (fl) => {
+        const aESKey = await decryptRSA(
+          fl.encryptedAESKey,
+          rSAKeyPair.current.privateKey
+        );
+        aESKeys.current.push({ id: fl.id, aESKey: aESKey });
+        ipnsKeys.current.push({ id: fl.id, key: fl.iPNSname });
+      })
+    );
 
     // Loop: fetchListPeersBlockchain(id) -> return-Array kommt in Peer-UseState-
-    (await fetchedLists).map(async (fl) => {
-      const peers = await fetchListPeersBlockchain(fl.id);
-      for (let i = 0; i < peers.length; i++) {
-        setPeerAddresses((prev) => [...prev, { id: fl.id, peer: peers[i] }]);
-      }
-    });
+    await Promise.all(
+      (
+        await fetchedLists
+      ).map(async (fl) => {
+        const peers = await fetchListPeersBlockchain(fl.id);
+        for (let i = 0; i < peers.length; i++) {
+          setPeerAddresses((prev) => [...prev, { id: fl.id, peer: peers[i] }]);
+        }
+      })
+    );
+
     // folgende Zeilen dann anpassen bzw. löschen:
 
-    ipnsKeys.current.map(async (l) => {
-      // anpassen auf Array
-      const keyPair = await deserializeKeys(l.key);
-      deserKeys.current.push({ id: l.id, key: keyPair.publicKey });
-    });
+    await Promise.all(
+      ipnsKeys.current.map(async (l) => {
+        // anpassen auf Array
+        alert(`ksdkd: ${l.id}`);
+        const keyPair = await deserializeKeys(l.key);
+        alert(`keypair: ${keyPair.publicKey}`);
+        deserKeys.current.push({ id: l.id, key: keyPair.publicKey });
+        //alert(`stuff: ${l.id}, ${keyPair.publicKey}`);
+      })
+    );
 
-    deserKeys.current.map(async (l) => {
-      const result = await resolveFromIpns(l.key);
-      const aESKey = aESKeys.current.find(
-        (keyObj) => keyObj.id === l.id
-      ).aESKey;
-      const list = await fetchFromPinata(result.cid, aESKey); // Parameter: AES-Key-
-      // (in der fetchFromPinata() erfolgt die Entschlüsselung der Listen, JSON parsen)-
-      setLists((prev) => [...prev, list]);
-    });
+    await Promise.all(
+      deserKeys.current.map(async (l) => {
+        const result = await resolveFromIpns(l.key);
+        alert(`hello`);
+
+        const aESKey = aESKeys.current.find(
+          (keyObj) => keyObj.id === l.id
+        ).aESKey;
+        const list = await fetchFromPinata(result.cid, aESKey); // Parameter: AES-Key-
+        // (in der fetchFromPinata() erfolgt die Entschlüsselung der Listen, JSON parsen)-
+
+        setLists((prev) => [...prev, list]);
+      })
+    );
   };
 
   const deleteList = async (deletedList) => {
@@ -208,7 +230,7 @@ const App = () => {
     // löschen aus Liste-Mapping und ipnsKeys-Array, AES-Key-Array, deserKeys, Peer-UseState-
 
     try {
-      await deleteListBlockchain(deletedList.id, accountMetaMask);
+      await deleteListBlockchain(deletedList.id);
       alert(`deletion from blockchain complete`);
     } catch (error) {
       alert(`deletion from blockchain unsuccessful`);
@@ -263,12 +285,7 @@ const App = () => {
         aESKeys.current.find((keyObj) => keyObj.id === id).aESKey,
         peerRSAPublicKey
       );
-      await shareListBlockchain(
-        peer,
-        id,
-        peerEncryptedAESKeyString,
-        accountMetaMask
-      );
+      await shareListBlockchain(peer, id, peerEncryptedAESKeyString);
     } catch (error) {
       alert(`sharing unsuccessful, error: ${error}`);
       return;
@@ -285,7 +302,7 @@ const App = () => {
     //                      ...Test auf requires (z.B. unshare mit mir selbst als letztem User), sonst return und retval prüfen
     //                      ...macht: SC-Funktion aufrufen, User löschen etc.
     try {
-      await unshareListBlockchain(peer, id, accountMetaMask);
+      await unshareListBlockchain(peer, id);
     } catch (error) {
       return;
     }

@@ -26,7 +26,9 @@ export const fetchFromPinata = async (cid, aESKey) => {
   alert(`fetching from pinata started`);
   try {
     const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
-    const encryptedList = new TextEncoder().encode(response.list); // Pinata: JSON wurde gespeichert, enthält versch. Daten-
+    const jsonData = await response.json();
+    alert(`response from pinata: ${JSON.stringify(jsonData)}`);
+    const encryptedList = new TextEncoder().encode(jsonData.list); // Pinata: JSON wurde gespeichert, enthält versch. Daten-
     const list = decryptAES(encryptedList, aESKey);
     return list;
   } catch (error) {
