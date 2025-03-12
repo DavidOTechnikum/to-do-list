@@ -92,23 +92,26 @@ export async function shareListBlockchain(
   accountMetaMask
 ) {
   // Parameter: Peer-Adresse, ListenID, verschlüsselten AES-Key-
-  // shareList() aufrufen: peer, id, keyAES
+  // shareList() aufrufen: peer, id, keyAES-
   try {
-    await userListManagementContract.methods.shareList(
-      peer,
-      id,
-      peerEncryptedAESKeyString
-    );
-    send({ from: accountMetaMask });
+    await userListManagementContract.methods
+      .shareList(peer, id, peerEncryptedAESKeyString)
+      .send({ from: accountMetaMask });
   } catch (error) {
     return error;
   }
 }
 
-export async function unshareListBlockchain() {
-  // Parameter: Peer-Adresse, ListenID
+export async function unshareListBlockchain(peer, id, accountMetaMask) {
+  // Parameter: Peer-Adresse, ListenID-
   // unshareList() aufrufen
-  // retval: bool
+  try {
+    await userListManagementContract.methods
+      .unshareList(peer, id)
+      .send({ from: accountMetaMask });
+  } catch (error) {
+    return error;
+  }
 }
 
 export async function storeRSAPubKeyBlockchain(rSAPubKey, accountMetaMask) {

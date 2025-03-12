@@ -22,7 +22,8 @@ import {
   getListIpnsName,
   fetchListPeersBlockchain,
   getRSAPubKeyBlockchain,
-  shareListBlockchain
+  shareListBlockchain,
+  unshareListBlockchain
 } from "./UserListManagementService";
 import { flushSync } from "react-dom";
 import { createAESKey, encryptAES } from "./AESEncryption";
@@ -277,15 +278,31 @@ const App = () => {
     // Peer-Adresse mit ListenID in useState-
   };
 
-  const unshareList = (id, peer) => {
+  const unshareList = async (id, peer) => {
     alert(`unsharing`);
     // (GUI-Button:) Peer-Adresse - Button-Click: Adresse & ListenID-
     // Blockchain-Funktion: ruft SC auf -
     //                      ...Test auf requires (z.B. unshare mit mir selbst als letztem User), sonst return und retval prüfen
     //                      ...macht: SC-Funktion aufrufen, User löschen etc.
-    // falls geklappt: Peer-Adressenobjekt aus useState löschen
+    try {
+      await unshareListBlockchain(peer, id, accountMetaMask);
+    } catch (error) {
+      return;
+    }
+    // falls geklappt: Peer-Adressenobjekt aus useState löschen-
     // (Synchronisation mit Peer -> unlösbar? bleibt in seinem Programm bis er neu fetcht) loose end!
-    // if: unshare mit mir selbst -> Listendaten aus useStates und Arrays entfernen
+    // if: unshare mit mir selbst -> Listendaten aus useStates und Arrays entfernen-
+    if (peer === accountMetaMask) {
+      setLists((prev) => prev.filter((item) => item.id !== id));
+      ipnsKeys.current = ipnsKeys.current.filter((item) => item.id !== id);
+      aESKeys.current = aESKeys.current.filter((item) => item.id !== id);
+      deserKeys.current = deserKeys.current.filter((item) => item.id !== id);
+      setPeerAddresses((l) => l.filter((item) => item.id !== id));
+    } else {
+      setPeerAddresses((prev) =>
+        prev.filter((peerObj) => !(peerObj.id === id && peerObj.peer === peer))
+      );
+    }
   };
 
   if (loadingMetaMask) {
