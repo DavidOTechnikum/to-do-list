@@ -151,6 +151,7 @@ const App = () => {
     const aESKey = aESKeys.current.find(
       (keyObj) => keyObj.id === list.id
     ).aESKey;
+
     const cid = await uploadToPinata(list, aESKey); // AES-Key hier auch mitgeben für Verschlüsselung des Contents-
     ipnsKeys.current.map((l) => {
       if (l.id == list.id) {
@@ -178,8 +179,8 @@ const App = () => {
           fl.encryptedAESKey,
           rSAKeyPair.current.privateKey
         );
-        aESKeys.current.push({ id: fl.id, aESKey: aESKey });
-        ipnsKeys.current.push({ id: fl.id, key: fl.iPNSname });
+        aESKeys.current.push({ id: Number(fl.id), aESKey: aESKey });
+        ipnsKeys.current.push({ id: Number(fl.id), key: fl.iPNSname });
       })
     );
 
@@ -200,9 +201,7 @@ const App = () => {
     await Promise.all(
       ipnsKeys.current.map(async (l) => {
         // anpassen auf Array
-        alert(`ksdkd: ${l.id}`);
         const keyPair = await deserializeKeys(l.key);
-        alert(`keypair: ${keyPair.publicKey}`);
         deserKeys.current.push({ id: l.id, key: keyPair.publicKey });
         //alert(`stuff: ${l.id}, ${keyPair.publicKey}`);
       })
@@ -211,11 +210,11 @@ const App = () => {
     await Promise.all(
       deserKeys.current.map(async (l) => {
         const result = await resolveFromIpns(l.key);
-        alert(`hello`);
 
         const aESKey = aESKeys.current.find(
           (keyObj) => keyObj.id === l.id
         ).aESKey;
+        alert(`aesKey at fetching in the useref: ${aESKey}`);
         const list = await fetchFromPinata(result.cid, aESKey); // Parameter: AES-Key-
         // (in der fetchFromPinata() erfolgt die Entschlüsselung der Listen, JSON parsen)-
 

@@ -9,8 +9,10 @@ const pinata = new PinataSDK({
 
 // Verschlüsselung!-
 export const uploadToPinata = async (list, aESKey) => {
-  const ciphertextIv = await encryptAES(list, aESKey);
-  const ciphertextIvString = new TextDecoder().decode(ciphertextIv);
+  const ciphertextIvString = await encryptAES(list, aESKey);
+  //const ciphertextIv = await encryptAES(list, aESKey);
+  //const decoder = new TextDecoder();
+  //const ciphertextIvString = decoder.decode(ciphertextIv);
   try {
     const result = await pinata.upload.json({ list: ciphertextIvString }); // für Pinata-Upload: verschlüsselte Daten als String
     alert(`Pinata upload successful`); // in Objekt eingebettet, weil JSON-Upload am besten funktioniert
@@ -28,8 +30,9 @@ export const fetchFromPinata = async (cid, aESKey) => {
     const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
     const jsonData = await response.json();
     alert(`response from pinata: ${JSON.stringify(jsonData)}`);
-    const encryptedList = new TextEncoder().encode(jsonData.list); // Pinata: JSON wurde gespeichert, enthält versch. Daten-
-    const list = decryptAES(encryptedList, aESKey);
+    //const encoder = new TextEncoder();
+    //const encryptedList = encoder.encode(jsonData.list); // Pinata: JSON wurde gespeichert, enthält versch. Daten-
+    const list = decryptAES(jsonData.list, aESKey);
     return list;
   } catch (error) {
     return null;
