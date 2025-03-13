@@ -36,16 +36,11 @@ export const encryptAES = async (list, aESKey) => {
   combined.set(iv);
   combined.set(new Uint8Array(encryptedBuffer), iv.length);
 
-  //const returnbuffer = Buffer.from(combined);
-  //const returnbuffer = combined.buffer.slice(0);
-  //const returnString = Buffer.from(combined).toString("base64");
   const returnString = btoa(String.fromCharCode(...combined));
   return returnString;
 };
 
 export const decryptAES = async (combinedString, aESKey) => {
-  //alert(`combined: ${combinedString}`);
-
   //const combined = new Uint8Array(Buffer.from(combinedString, "base64"));
   const combined = new Uint8Array(
     atob(combinedString)

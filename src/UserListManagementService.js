@@ -111,15 +111,14 @@ export async function fetchUserListsBlockchain(accountMetaMask) {
   );
   // pushen: ListObject = { id, ipnsName, AESKey} und return
   returnListData.map((object) => {
-    alert(
-      `returndata: ${object.id}, ${object.iPNSname}, ${object.encryptedAESKey}`
-    );
+    //alert(`returndata: ${object.id}, ${object.iPNSname}, ${object.encryptedAESKey}`);
   });
   return returnListData; // Format bzw. Objekt überprüfen!
 }
 
 export async function fetchListPeersBlockchain(id) {
   // Parameter: ListenID-
+  alert(`here`);
   try {
     const peers = await userListManagementContract.getListUsers(id);
     return peers;

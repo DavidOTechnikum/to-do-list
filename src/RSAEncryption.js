@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   storeRSAPubKeyBlockchain,
   getRSAPubKeyBlockchain
@@ -11,30 +10,31 @@ export const encryptRSA = async (aESKey, rSAPublicKey) => {
     rSAPublicKey,
     exportedAESKey
   );
-  //const encryptedAESKeyString = new TextDecoder().decode(encryptedAESKey);
   const encryptedAESKeyString = arrayBufferToBase64(encryptedAESKey);
   return encryptedAESKeyString;
 };
 
 export const decryptRSA = async (encryptedAESKeyString, rSAPrivateKey) => {
-  //const encryptedAESKeyArray = new TextEncoder().encode(encryptedAESKeyString);
-  //const encryptedAESKey = encryptedAESKeyArray.buffer.slice(0);
   const encryptedAESKey = base64ToArrayBuffer(encryptedAESKeyString);
-
-  const decryptedAESKey = await crypto.subtle.decrypt(
-    {
-      name: "RSA-OAEP"
-    },
-    rSAPrivateKey,
-    encryptedAESKey
-  );
-  const aESKey = await crypto.subtle.importKey(
-    "raw",
-    decryptedAESKey,
-    { name: "AES-GCM" },
-    true,
-    ["encrypt", "decrypt"]
-  );
+  let aESKey;
+  try {
+    const decryptedAESKey = await crypto.subtle.decrypt(
+      {
+        name: "RSA-OAEP"
+      },
+      rSAPrivateKey,
+      encryptedAESKey
+    );
+    aESKey = await crypto.subtle.importKey(
+      "raw",
+      decryptedAESKey,
+      { name: "AES-GCM" },
+      true,
+      ["encrypt", "decrypt"]
+    );
+  } catch (error) {
+    throw new Error("decryption failed");
+  }
 
   return aESKey;
 };

@@ -161,40 +161,45 @@ const App = () => {
   };
 
   const fetchLists = async () => {
-    // hier weiter debuggen !!!
     clearLists();
     if (rSAKeyPair.current == null) {
       alert(`no RSA Key set`);
       return;
     }
 
-    const fetchedLists = fetchUserListsBlockchain(accountMetaMask); // hier Blockchain-Anbindung neu machen -> retval: Array mit
+    const fetchedLists = await fetchUserListsBlockchain(accountMetaMask); // hier Blockchain-Anbindung neu machen -> retval: Array mit
     // Objekten: {id: int, iPNSname: String, encryptedAESKey: String}-
     // AES-Keys entschlüsseln und -> Array (list id + aes key )-
     await Promise.all(
       (
         await fetchedLists
       ).map(async (fl) => {
-        const aESKey = await decryptRSA(
-          fl.encryptedAESKey,
-          rSAKeyPair.current.privateKey
-        );
+        let aESKey;
+        try {
+          aESKey = await decryptRSA(
+            fl.encryptedAESKey,
+            rSAKeyPair.current.privateKey
+          );
+        } catch (error) {
+          alert(`list: ${fl.id} id: decryption error: ${error}`);
+        }
+
         aESKeys.current.push({ id: Number(fl.id), aESKey: aESKey });
         ipnsKeys.current.push({ id: Number(fl.id), key: fl.iPNSname });
       })
     );
 
     // Loop: fetchListPeersBlockchain(id) -> return-Array kommt in Peer-UseState-
+    /*
     await Promise.all(
-      (
-        await fetchedLists
-      ).map(async (fl) => {
+      fetchedLists.map(async (fl) => {
         const peers = await fetchListPeersBlockchain(fl.id);
         for (let i = 0; i < peers.length; i++) {
           setPeerAddresses((prev) => [...prev, { id: fl.id, peer: peers[i] }]);
         }
       })
     );
+    */
 
     // folgende Zeilen dann anpassen bzw. löschen:
 
@@ -281,7 +286,7 @@ const App = () => {
       const peerRSAPubKeyString = await getRSAPubKeyBlockchain(peer);
       const peerRSAPublicKey = await importRSAPublicKey(peerRSAPubKeyString);
       const peerEncryptedAESKeyString = await encryptRSA(
-        aESKeys.current.find((keyObj) => keyObj.id === id).aESKey,
+        aESKeys.current.find((keyObj) => keyObj.id == id).aESKey,
         peerRSAPublicKey
       );
       await shareListBlockchain(peer, id, peerEncryptedAESKeyString);

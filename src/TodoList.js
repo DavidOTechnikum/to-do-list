@@ -78,7 +78,18 @@ const TodoList = ({
       <button onClick={() => uploadList(list)}>Upload to IPFS</button>
       <button onClick={() => deleteList(list)}>Delete list</button>
       <p></p>
-      {showPeers ? (
+
+      <div style={{ display: "flex", gap: "8px" }}>
+        <input
+          type="text"
+          placeholder="Peer address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+        <button onClick={() => shareList(list.id, address)}>Share</button>
+      </div>
+
+      {showPeers && peerAddresses && peerAddresses.length > 0 ? (
         <div>
           {peerAddresses
             .filter((peerObj) => peerObj.id === list.id)
@@ -91,15 +102,6 @@ const TodoList = ({
               </span>
             ))}
 
-          <div style={{ display: "flex", gap: "8px" }}>
-            <input
-              type="text"
-              placeholder="Peer address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-            />
-            <button onClick={() => shareList(list.id, address)}>Share</button>
-          </div>
           <button onClick={() => setShowPeers(false)}>"Hide peers"</button>
         </div>
       ) : (

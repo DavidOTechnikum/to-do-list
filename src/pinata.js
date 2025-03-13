@@ -25,11 +25,9 @@ export const uploadToPinata = async (list, aESKey) => {
 
 export const fetchFromPinata = async (cid, aESKey) => {
   // Parameter: AES-Key-
-  alert(`fetching from pinata started`);
   try {
     const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
     const jsonData = await response.json();
-    alert(`response from pinata: ${JSON.stringify(jsonData)}`);
     //const encoder = new TextEncoder();
     //const encryptedList = encoder.encode(jsonData.list); // Pinata: JSON wurde gespeichert, enthält versch. Daten-
     const list = decryptAES(jsonData.list, aESKey);
