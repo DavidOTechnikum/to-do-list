@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { saveToLocalStorage } from "./storage";
 
 // Template for processing the task info created in TodoList:
 const Task = ({

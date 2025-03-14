@@ -59,7 +59,7 @@ function userCheck(address myAddress, uint _id) private view returns (bool) {
   return false;
 }
 
-
+/* noch so im Amoy-Contract 
   function shareList(address peer, uint _id, string memory _keyAES) public {
     require(userCheck(msg.sender, _id), "No rights to the list");
     require(peer != msg.sender, "Sharing with oneself not possible");
@@ -69,6 +69,31 @@ function userCheck(address myAddress, uint _id) private view returns (bool) {
 
     emit ListShared(_id, peer);
   }
+  */ 
+
+  function shareList(address peer, uint _id, string memory _keyAES) public {
+    require(userCheck(msg.sender, _id), "No rights to the list");
+    require(peer != msg.sender, "Sharing with oneself not possible");
+
+    // Check if the list has already been shared with the peer
+    bool exists = false;
+    for (uint i = 0; i < userLists[peer].length; i++) {
+        if (userLists[peer][i].id == _id) {
+            // Update the key
+            userLists[peer][i].keyAES = _keyAES;
+            exists = true;
+            break;
+        }
+    }
+
+    // If not found, add a new entry
+    if (!exists) {
+        userLists[peer].push(ListKey(_id, _keyAES));
+        listUsers[_id].push(peer);
+    }
+
+    emit ListShared(_id, peer);
+}
 
   function unshareList(address peer, uint _id) public {
     require(userCheck(msg.sender, _id), "No rights to the list");

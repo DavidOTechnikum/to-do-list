@@ -11,25 +11,29 @@ const helia = await createHelia();
 const nameservice = ipns(helia);
 
 export const newPublishToIpns = async (cid, keyPair) => {
-  alert(`IPNS publishing started...`);
-  const result = await nameservice.publish(keyPair, cid);
+  alert(`IPNS publishing started, cid: ${cid}`);
+  const result = await nameservice.publish(keyPair, cid, {
+    allowOverwrite: true
+  });
   // use result for debugging:
   alert(`published to ipns: ${result.value}; pubkey: ${keyPair.publicKey}`);
 };
 
 export const republishToIpns = async (keyPairString, cid) => {
-  alert(`republishing started`);
+  alert(`republishing started, cid: ${cid}`);
   const serializedKeyPair = new Uint8Array(
     atob(keyPairString)
       .split("")
       .map((char) => char.charCodeAt(0))
   );
   const deserKeyPair = privateKeyFromProtobuf(serializedKeyPair);
-  // to here.
-  const result = await nameservice.publish(deserKeyPair, cid);
+  // IPNS:
+  const result = await nameservice.publish(deserKeyPair, cid, {
+    allowOverwrite: true
+  });
   // use result for debugging:
-  alert(`republished: ${result.value}`);
-  resolveFromIpns(deserKeyPair.publicKey);
+  alert(`republished: ${result.value}; pubkey: ${deserKeyPair.publicKey}`);
+  //resolveFromIpns(deserKeyPair.publicKey);
 };
 
 export const serializeKeys = (keyPair) => {
@@ -62,14 +66,17 @@ export const resolveFromIpns = async (publicKey) => {
   try {
     //const result = await nameservice.resolve(publicKey);
 
-    const result = await withTimeout(nameservice.resolve(publicKey), 5000);
+    const result = await withTimeout(
+      nameservice.resolve(publicKey, { nocache: true, offline: false })
+    );
     alert(`resolved: ${result.cid}`);
     return result;
   } catch (error) {
     alert(`resolving unsuccessful, error: `, error.stack);
-    return {
-      id: "x",
-      cid: "bafkreifdimlownfs452g6lby26i2yzos3q7hhqx7fgyo4rawgtiqz24ch4"
-    };
+    return null;
+    //return {
+    //id: "x",
+    //cid: "bafkreifdimlownfs452g6lby26i2yzos3q7hhqx7fgyo4rawgtiqz24ch4"
+    //};
   }
 };

@@ -72,7 +72,7 @@ export async function createListBlockchain(id, ipnsName, myEncryptedAESKey) {
       myEncryptedAESKey
     );
     const receipt = await tx.wait();
-    alert(`Transaction confirmed: ${receipt}`);
+    alert(`Transaction confirmed: ${receipt.blockNumber}`);
   } catch (error) {
     alert(`Error creating list: ${error}`);
   }
@@ -88,7 +88,7 @@ export async function fetchUserListsBlockchain(accountMetaMask) {
       accountMetaMask
     );
   } catch (error) {
-    return error;
+    return Error(`BC fetching failed, error: ${error}`);
   }
 
   // Loop: ...methods.iPNSname(id).call(); -> IPNS-Namen holen
@@ -134,7 +134,7 @@ export async function deleteListBlockchain(id) {
     //await userListManagementContract.methods.deleteList(id).send({ from: accountMetaMask });
     const tx = await userListManagementContract.deleteList(id);
     const receipt = await tx.wait();
-    alert(`transaction confirmed: ${receipt}`);
+    alert(`transaction confirmed: ${receipt.blockNumber}`);
   } catch (error) {
     return error;
   }
@@ -151,7 +151,7 @@ export async function shareListBlockchain(peer, id, peerEncryptedAESKeyString) {
       peerEncryptedAESKeyString
     );
     const receipt = await tx.wait();
-    alert(`transaction confirmed: ${receipt}`);
+    alert(`transaction confirmed: ${receipt.blockNumber}`);
   } catch (error) {
     return error;
   }
@@ -164,7 +164,7 @@ export async function unshareListBlockchain(peer, id) {
     //await userListManagementContract.methods.unshareList(peer, id).send({ from: accountMetaMask });
     const tx = await userListManagementContract.unsahreList(peer, id);
     const receipt = await tx.wait();
-    alert(`transaction confirmed: ${receipt}`);
+    alert(`transaction confirmed: ${receipt.blockNumber}`);
   } catch (error) {
     return error;
   }
@@ -177,7 +177,7 @@ export async function storeRSAPubKeyBlockchain(rSAPubKey, accountMetaMask) {
     //await userListManagementContract.methods.storeRSAPubKey(rSAPubKey).send({ from: accountMetaMask });
     const tx = await userListManagementContract.storeRSAPubKey(rSAPubKey);
     const receipt = await tx.wait();
-    alert(`transaction confirmed: ${receipt}`);
+    alert(`transaction confirmed: ${receipt.blockNumber}`);
   } catch (error) {
     return error;
   }

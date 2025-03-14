@@ -41,10 +41,10 @@
  * https://trufflesuite.com/docs/truffle/getting-started/using-the-truffle-dashboard/
  */
 
-// require('dotenv').config();
+require('dotenv').config();
 // const { MNEMONIC, PROJECT_ID } = process.env;
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
   /**
@@ -58,6 +58,24 @@ module.exports = {
    */
 
   networks: {
+/*
+    amoy: {
+      provider: () =>
+        new HDWalletProvider(process.env.PRIVATE_KEY, 'https://rpc-amoy.polygon.technology'),
+      network_id: 80002, // Amoy Testnet Chain ID
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+      gasPrice: 25000000000,  // 25 Gwei (minimum required)
+      maxPriorityFeePerGas: 25000000000, // 25 Gwei
+      maxFeePerGas: 50000000000 // 50 Gwei
+    }
+  },
+  compilers: {
+    solc: {
+      version: "0.8.20" // Use the Solidity version that matches your contract
+    }
+*/
     // Useful for testing. The `development` name is special - truffle uses it by default
     // if it's defined here and no other network is specified at the command line.
     // You should run a client (like ganache, geth, or parity) in a separate terminal

@@ -3,7 +3,6 @@ import TodoList from "./TodoList";
 import AddForm from "./AddForm";
 import { uploadToPinata, fetchFromPinata, unpinFromPinata } from "./pinata";
 import { generateKeyPair } from "@libp2p/crypto/keys";
-import { saveToLocalStorage, loadFromLocalStorage } from "./storage";
 import "./App.css";
 import RSAKeyHandling, { decryptRSA } from "./RSAEncryption";
 import { encryptRSA, importRSAPublicKey } from "./RSAEncryption";
@@ -19,14 +18,19 @@ import {
   createListBlockchain,
   fetchUserListsBlockchain,
   deleteListBlockchain,
-  getListIpnsName,
-  fetchListPeersBlockchain,
   getRSAPubKeyBlockchain,
   shareListBlockchain,
   unshareListBlockchain
 } from "./UserListManagementService";
-import { flushSync } from "react-dom";
-import { createAESKey, encryptAES } from "./AESEncryption";
+import { createAESKey } from "./AESEncryption";
+import {
+  createSubdomain,
+  deleteDNSLink,
+  publishDNSLink,
+  resolveDNSLink,
+  updateDNSLink,
+  updateSubdomain
+} from "./dnslink";
 
 const App = () => {
   // for MetaMask:
@@ -124,7 +128,8 @@ const App = () => {
 
     setLists((prev) => [...prev, newList]);
     const cid = await uploadToPinata(newList, aESKey); // AES-Key mitgeben und dann in der Funktion alles verschlüsseln und hochladen-
-    await newPublishToIpns(cid, iPNSKeyPair);
+    //_await newPublishToIpns(cid, iPNSKeyPair);
+    await publishDNSLink(String(newList.id), cid);
 
     // storing to ipnsKeys necessary for uploadList()-
     ipnsKeys.current.push({ id: newList.id, key: serializedIPNSKeyPair });
@@ -153,9 +158,10 @@ const App = () => {
     ).aESKey;
 
     const cid = await uploadToPinata(list, aESKey); // AES-Key hier auch mitgeben für Verschlüsselung des Contents-
-    ipnsKeys.current.map((l) => {
+    ipnsKeys.current.map(async (l) => {
       if (l.id == list.id) {
-        republishToIpns(l.key, cid);
+        //-republishToIpns(l.key, cid);
+        await updateDNSLink(String(list.id), cid);
       }
     });
   };
@@ -166,7 +172,6 @@ const App = () => {
       alert(`no RSA Key set`);
       return;
     }
-
     const fetchedLists = await fetchUserListsBlockchain(accountMetaMask); // hier Blockchain-Anbindung neu machen -> retval: Array mit
     // Objekten: {id: int, iPNSname: String, encryptedAESKey: String}-
     // AES-Keys entschlüsseln und -> Array (list id + aes key )-
@@ -186,6 +191,7 @@ const App = () => {
 
         aESKeys.current.push({ id: Number(fl.id), aESKey: aESKey });
         ipnsKeys.current.push({ id: Number(fl.id), key: fl.iPNSname });
+        alert(`ipns name: ${fl.iPNSname}`);
       })
     );
 
@@ -214,14 +220,25 @@ const App = () => {
 
     await Promise.all(
       deserKeys.current.map(async (l) => {
-        const result = await resolveFromIpns(l.key);
+        //-const result = await resolveFromIpns(l.key);
+        const result = await resolveDNSLink(String(l.id));
+        if (result == null) {
+          const errorList = { id: l.id, title: "Error", tasks: [] };
+          setLists((prev) => [...prev, errorList]);
+          return;
+        }
 
         const aESKey = aESKeys.current.find(
           (keyObj) => keyObj.id === l.id
         ).aESKey;
-        alert(`aesKey at fetching in the useref: ${aESKey}`);
-        const list = await fetchFromPinata(result.cid, aESKey); // Parameter: AES-Key-
+        const list = await fetchFromPinata(result, aESKey);
+        //-const list = await fetchFromPinata(result.cid, aESKey); // Parameter: AES-Key-
         // (in der fetchFromPinata() erfolgt die Entschlüsselung der Listen, JSON parsen)-
+        if (list == null) {
+          const errorList = { id: l.id, title: "Error", tasks: [] };
+          setLists((prev) => [...prev, errorList]);
+          return;
+        }
 
         setLists((prev) => [...prev, list]);
       })
@@ -243,7 +260,9 @@ const App = () => {
     // unpin:-
     deserKeys.current.map(async (l) => {
       if (l.id == deletedList.id) {
-        const cid = resolveFromIpns(l.key);
+        //-const cid = resolveFromIpns(l.key);
+        const cid = resolveDNSLink(String(l.id));
+        await deleteDNSLink(String(l.id));
         await unpinFromPinata(cid);
       }
     });
